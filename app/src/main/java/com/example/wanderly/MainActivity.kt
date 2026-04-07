@@ -1,9 +1,13 @@
 package com.example.wanderly
 
+import android.Manifest
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -15,6 +19,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -24,6 +30,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import com.example.wanderly.ui.theme.WanderlyTheme
+import com.example.wanderly.viewmodel.LocationViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,8 +48,35 @@ class MainActivity : ComponentActivity() {
 
 @PreviewScreenSizes
 @Composable
-fun WanderlyApp() {
+fun WanderlyApp(
+    viewModel: LocationViewModel = viewModel()
+) {
+    val state by viewModel.state.collectAsState()
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
+
+    val requestPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            try {
+                viewModel.startLocationUpdates()
+            } catch (e: SecurityException) {
+                Log.e("Location", "Security Exception: ${e.message}")
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (!viewModel.hasLocationPermission()) {
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        } else {
+            try {
+                viewModel.startLocationUpdates()
+            } catch (e: SecurityException) {
+                Log.e("Location", "Security Exception: ${e.message}")
+            }
+        }
+    }
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
@@ -60,10 +96,15 @@ fun WanderlyApp() {
         }
     ) {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-            Greeting(
-                name = "Android",
-                modifier = Modifier.padding(innerPadding)
-            )
+            if (state.latitude != null && state.longitude != null) {
+                Coordinates(
+                    state.latitude!!,
+                    state.longitude!!,
+                    Modifier.padding(innerPadding)
+                )
+            } else {
+                Text("loading")
+            }
         }
     }
 }
@@ -75,6 +116,14 @@ enum class AppDestinations(
     HOME("Home", Icons.Default.Home),
     FAVORITES("Favorites", Icons.Default.Favorite),
     PROFILE("Profile", Icons.Default.AccountBox),
+}
+
+@Composable
+fun Coordinates(lat: Double, lng: Double, modifier: Modifier = Modifier) {
+    Text(
+        text = "lat: $lat, lng: $lng",
+        modifier = modifier
+    )
 }
 
 @Composable
