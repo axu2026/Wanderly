@@ -16,13 +16,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 class LocationViewModel(application: Application) : AndroidViewModel(application) {
-    data class State(
+    data class LocationState(
         val latitude: Double? = null,
-        val longitude: Double? = null,
+        val longitude: Double? = null
     )
 
-    private val _state = MutableStateFlow(State())
-    val state: StateFlow<State> = _state
+    private val _state = MutableStateFlow(LocationState())
+    val state: StateFlow<LocationState> = _state
 
     private var fusedLocationClient = LocationServices.getFusedLocationProviderClient(application)
     private var locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 10000L)
@@ -38,7 +38,7 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
             override fun onLocationResult(locationResult: LocationResult) {
                 val loc = locationResult.lastLocation ?: return
 
-                _state.value = State(
+                _state.value = LocationState(
                     loc.latitude,
                     loc.longitude,
                 )

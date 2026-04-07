@@ -1,54 +1,80 @@
 package com.example.wanderly.ui.home
 
-import android.location.Address
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.gms.maps.model.LatLng
 import com.example.wanderly.ui.map.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import com.example.wanderly.viewmodel.HomeViewModel
+import com.example.wanderly.viewmodel.WeatherViewModel
 
 @Composable
-fun Home(coordinates: LatLng) {
+fun Home(
+    viewModel: HomeViewModel = viewModel(),
+    weatherViewModel: WeatherViewModel = viewModel(),
+    coordinates: LatLng
+) {
     val context = LocalContext.current
-    var address by rememberSaveable { mutableStateOf<Address?>(null) }
-    var isLoading by rememberSaveable { mutableStateOf(true) }
+    val address = viewModel.address
+    val isLoading = viewModel.isLoading
+    val scrollState = rememberScrollState()
 
     LaunchedEffect(coordinates) {
-        val lat = coordinates.latitude
-        val lng = coordinates.longitude
-        isLoading = true
-        address = withContext(Dispatchers.IO) {
-            reverseGeocode(context, lat, lng)
-        }
-        isLoading = false
+        viewModel.geocodeAddressIfNeeded(context, coordinates)
+        weatherViewModel.fetchWeather(coordinates)
     }
 
     if (isLoading) {
-        Text("Loading")
+        Box(
+            modifier = Modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
     } else if (address != null) {
         Column(
             modifier = Modifier.fillMaxSize()
-                .padding(16.dp, 16.dp, 16.dp, 16.dp),
+                .padding(16.dp)
+                .verticalScroll(scrollState)
+                .statusBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            address?.let {
-                Text("Welcome to ${getBestLocationName(it)}!")
-            }
-            Text("VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV")
+            Text(
+                text = "Welcome to",
+                style = MaterialTheme.typography.displaySmall
+            )
+            Text(
+                text = "${getBestLocationName(address)}!",
+                style = MaterialTheme.typography.displayMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = formatAddress(address),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            WeatherCard(weatherViewModel)
         }
     } else {
         Text("Location Unavailable!")

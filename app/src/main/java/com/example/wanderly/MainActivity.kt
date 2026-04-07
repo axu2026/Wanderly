@@ -31,6 +31,7 @@ import com.example.wanderly.viewmodel.LocationViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.wanderly.ui.map.*
 import com.example.wanderly.ui.home.*
+import com.example.wanderly.viewmodel.*
 import com.google.android.gms.maps.model.LatLng
 
 
@@ -52,6 +53,8 @@ fun WanderlyApp(
     viewModel: LocationViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val homeViewModel: HomeViewModel = viewModel()
+    val weatherViewModel: WeatherViewModel = viewModel()
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
 
     val requestPermissionLauncher = rememberLauncherForActivityResult(
@@ -99,7 +102,7 @@ fun WanderlyApp(
             val coordinates = LatLng(state.latitude!!, state.longitude!!)
 
             when (currentDestination) {
-                AppDestinations.HOME -> Home(coordinates)
+                AppDestinations.HOME -> Home(homeViewModel, weatherViewModel, coordinates)
                 AppDestinations.PROFILE -> Text("Profile")
                 AppDestinations.MAP -> Map(coordinates)
             }
