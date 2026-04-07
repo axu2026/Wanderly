@@ -8,14 +8,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
@@ -32,6 +29,7 @@ import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import com.example.wanderly.ui.theme.WanderlyTheme
 import com.example.wanderly.viewmodel.LocationViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.wanderly.ui.map.Map
 
 
 class MainActivity : ComponentActivity() {
@@ -95,16 +93,17 @@ fun WanderlyApp(
             }
         }
     ) {
-        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-            if (state.latitude != null && state.longitude != null) {
-                Coordinates(
-                    state.latitude!!,
-                    state.longitude!!,
-                    Modifier.padding(innerPadding)
-                )
-            } else {
-                Text("loading")
+        if (state.latitude != null && state.longitude != null) {
+            val lat = state.latitude!!
+            val lng = state.longitude!!
+
+            when (currentDestination) {
+                AppDestinations.HOME -> Text("Home: lat: $lat lng: $lng")
+                AppDestinations.PROFILE -> Text("Profile")
+                AppDestinations.MAP -> Map(lat, lng)
             }
+        } else {
+            Text("loading")
         }
     }
 }
@@ -114,7 +113,7 @@ enum class AppDestinations(
     val icon: ImageVector,
 ) {
     HOME("Home", Icons.Default.Home),
-    FAVORITES("Favorites", Icons.Default.Favorite),
+    MAP("Map", Icons.Default.LocationOn),
     PROFILE("Profile", Icons.Default.AccountBox),
 }
 
