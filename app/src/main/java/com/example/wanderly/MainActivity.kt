@@ -29,7 +29,9 @@ import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import com.example.wanderly.ui.theme.WanderlyTheme
 import com.example.wanderly.viewmodel.LocationViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.wanderly.ui.map.Map
+import com.example.wanderly.ui.map.*
+import com.example.wanderly.ui.home.*
+import com.google.android.gms.maps.model.LatLng
 
 
 class MainActivity : ComponentActivity() {
@@ -76,35 +78,34 @@ fun WanderlyApp(
         }
     }
 
-    NavigationSuiteScaffold(
-        navigationSuiteItems = {
-            AppDestinations.entries.forEach {
-                item(
-                    icon = {
-                        Icon(
-                            it.icon,
-                            contentDescription = it.label
-                        )
-                    },
-                    label = { Text(it.label) },
-                    selected = it == currentDestination,
-                    onClick = { currentDestination = it }
-                )
+    if (state.latitude != null && state.longitude != null) {
+        NavigationSuiteScaffold(
+            navigationSuiteItems = {
+                AppDestinations.entries.forEach {
+                    item(
+                        icon = {
+                            Icon(
+                                it.icon,
+                                contentDescription = it.label
+                            )
+                        },
+                        label = { Text(it.label) },
+                        selected = it == currentDestination,
+                        onClick = { currentDestination = it }
+                    )
+                }
             }
-        }
-    ) {
-        if (state.latitude != null && state.longitude != null) {
-            val lat = state.latitude!!
-            val lng = state.longitude!!
+        ) {
+            val coordinates = LatLng(state.latitude!!, state.longitude!!)
 
             when (currentDestination) {
-                AppDestinations.HOME -> Text("Home: lat: $lat lng: $lng")
+                AppDestinations.HOME -> Home(coordinates)
                 AppDestinations.PROFILE -> Text("Profile")
-                AppDestinations.MAP -> Map(lat, lng)
+                AppDestinations.MAP -> Map(coordinates)
             }
-        } else {
-            Text("loading")
         }
+    } else {
+        Text("Loading")
     }
 }
 

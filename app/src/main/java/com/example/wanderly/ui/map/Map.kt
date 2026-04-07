@@ -12,8 +12,7 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 
 @Composable
-fun Map(lat: Double, lng: Double) {
-    val coordinates = LatLng(lat, lng)
+fun Map(coordinates: LatLng) {
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.Builder()
             .target(coordinates)
