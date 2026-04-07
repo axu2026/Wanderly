@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.wanderly.viewmodel.WeatherViewModel
+import com.example.wanderly.ui.Loading
 
 @Composable
 fun WeatherCard(viewModel: WeatherViewModel = viewModel()) {
@@ -32,14 +33,7 @@ fun WeatherCard(viewModel: WeatherViewModel = viewModel()) {
         val loading by viewModel.isLoading.collectAsState()
 
         if (loading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
+            Loading()
         } else if (weather != null) {
             val data = weather!!
 
@@ -62,7 +56,7 @@ fun WeatherCard(viewModel: WeatherViewModel = viewModel()) {
                 )
             }
         } else {
-            Text("Weather Unavailable!")
+            Loading() // change later
         }
     }
 }

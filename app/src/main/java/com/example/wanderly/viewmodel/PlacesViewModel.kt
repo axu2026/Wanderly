@@ -8,26 +8,24 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class WeatherViewModel: ViewModel() {
-    private val _weather = MutableStateFlow<WeatherResponse?>(null)
-    val weather: StateFlow<WeatherResponse?> = _weather
+class PlacesViewModel(
+    private val repository: PlacesRepository = PlacesRepository()
+) : ViewModel() {
+    private val _places = MutableStateFlow<List<Place>>(emptyList())
+    val places: StateFlow<List<Place>> = _places
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    fun fetchWeather(coordinates: LatLng) {
+    fun searchNearby(coordinates: LatLng, query: String? = null) {
         viewModelScope.launch {
             _isLoading.value = true
             val lat = coordinates.latitude
             val lon = coordinates.longitude
 
             try {
-                val result = RetrofitInstance.api.getWeather(
-                    lat,
-                    lon,
-                    "" // change eventually
-                )
-                _weather.value = result
+                val list = repository.getNearbyPlaces(lat, lon, query)
+                _places.value = list
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
