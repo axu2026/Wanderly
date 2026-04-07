@@ -22,13 +22,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import com.example.wanderly.ui.theme.WanderlyTheme
 import com.example.wanderly.viewmodel.LocationViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.wanderly.ui.Loading
 import com.example.wanderly.ui.map.*
 import com.example.wanderly.ui.home.*
 import com.example.wanderly.ui.profile.*
@@ -48,7 +46,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@PreviewScreenSizes
 @Composable
 fun WanderlyApp(
     viewModel: LocationViewModel = viewModel()
@@ -56,6 +53,7 @@ fun WanderlyApp(
     val state by viewModel.state.collectAsState()
     val homeViewModel: HomeViewModel = viewModel()
     val weatherViewModel: WeatherViewModel = viewModel()
+    val placesViewModel: PlacesViewModel = viewModel()
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
 
     val requestPermissionLauncher = rememberLauncherForActivityResult(
@@ -103,13 +101,13 @@ fun WanderlyApp(
             val coordinates = LatLng(state.latitude!!, state.longitude!!)
 
             when (currentDestination) {
-                AppDestinations.HOME -> Home(homeViewModel, weatherViewModel, coordinates)
+                AppDestinations.HOME -> Home(homeViewModel, weatherViewModel, placesViewModel, coordinates)
                 AppDestinations.PROFILE -> Profile()
                 AppDestinations.MAP -> Map(coordinates)
             }
         }
     } else {
-        Text("Loading")
+        Loading()
     }
 }
 
@@ -119,29 +117,5 @@ enum class AppDestinations(
 ) {
     HOME("Home", Icons.Default.Home),
     MAP("Map", Icons.Default.LocationOn),
-        PROFILE("Profile", Icons.Default.AccountBox),
-}
-
-@Composable
-fun Coordinates(lat: Double, lng: Double, modifier: Modifier = Modifier) {
-    Text(
-        text = "lat: $lat, lng: $lng",
-        modifier = modifier
-    )
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    WanderlyTheme {
-        Greeting("Android")
-    }
+    PROFILE("Profile", Icons.Default.AccountBox),
 }
