@@ -31,6 +31,7 @@ import com.example.wanderly.viewmodel.LocationViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.wanderly.ui.map.*
 import com.example.wanderly.ui.home.*
+import com.example.wanderly.ui.profile.*
 import com.example.wanderly.viewmodel.*
 import com.google.android.gms.maps.model.LatLng
 
@@ -103,7 +104,7 @@ fun WanderlyApp(
 
             when (currentDestination) {
                 AppDestinations.HOME -> Home(homeViewModel, weatherViewModel, coordinates)
-                AppDestinations.PROFILE -> Text("Profile")
+                AppDestinations.PROFILE -> Profile()
                 AppDestinations.MAP -> Map(coordinates)
             }
         }
@@ -118,7 +119,7 @@ enum class AppDestinations(
 ) {
     HOME("Home", Icons.Default.Home),
     MAP("Map", Icons.Default.LocationOn),
-    PROFILE("Profile", Icons.Default.AccountBox),
+        PROFILE("Profile", Icons.Default.AccountBox),
 }
 
 @Composable
