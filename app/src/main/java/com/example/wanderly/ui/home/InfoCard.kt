@@ -1,6 +1,5 @@
 package com.example.wanderly.ui.home
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,17 +35,15 @@ fun InfoCard(viewModel: InformationViewModel = viewModel()) {
     ElevatedCard(
         onClick = { expanded = !expanded },
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 6.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .fillMaxWidth(),
         elevation = CardDefaults.elevatedCardElevation(
             defaultElevation = 3.dp,
             pressedElevation = 6.dp
         )
     ) {
         Column(
-            modifier = Modifier
-                .padding(20.dp)
-                .animateContentSize()
+            modifier = Modifier.padding(20.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

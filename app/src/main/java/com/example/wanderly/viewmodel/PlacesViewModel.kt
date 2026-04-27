@@ -12,9 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-// view model for places
 class PlacesViewModel(application: Application) : AndroidViewModel(application) {
-    // repository for places
     private val database = DatabaseProvider.getDatabase(application)
     private val repository = PlacesRepository(
         PlacesRetrofitInstance.api,
@@ -26,6 +24,9 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
     
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
+
+    private val _importantSpots = MutableStateFlow<List<PlaceResult>>(emptyList())
+    val importantSpots: StateFlow<List<PlaceResult>> = _importantSpots
 
     private val _searchQuery = MutableStateFlow("restaurant")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -48,6 +49,20 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
                 e.printStackTrace()
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+
+    fun fetchImportantSpots(coordinates: LatLng) {
+        viewModelScope.launch {
+            try {
+                val result = repository.getImportantSpots(
+                    coordinates.latitude,
+                    coordinates.longitude
+                )
+                _importantSpots.value = result
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

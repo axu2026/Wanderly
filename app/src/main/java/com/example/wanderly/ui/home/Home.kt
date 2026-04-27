@@ -58,6 +58,7 @@ fun Home(
     val address = viewModel.address
     val scrollState = rememberScrollState()
     val searchQuery by placesViewModel.searchQuery.collectAsState()
+    val importantSpots by placesViewModel.importantSpots.collectAsState()
     val focusManager = LocalFocusManager.current
     val backgroundImageUrl = viewModel.backgroundImageUrl
 
@@ -66,6 +67,7 @@ fun Home(
         viewModel.geocodeAddressIfNeeded(context, coordinates)
         weatherViewModel.fetchWeather(coordinates)
         placesViewModel.fetchPlaces(coordinates)
+        placesViewModel.fetchImportantSpots(coordinates)
     }
 
     // fetch information only when address is available
@@ -156,6 +158,17 @@ fun Home(
             InfoCard(informationViewModel)
             
             Spacer(modifier = Modifier.height(16.dp))
+
+            // Featured/Important Spots Section
+            if (importantSpots.isNotEmpty()) {
+                PlacesCards(
+                    title = "Featured Spots",
+                    places = importantSpots,
+                    userLocation = coordinates
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
             
             ElevatedCard(
                 modifier = Modifier
@@ -194,9 +207,17 @@ fun Home(
                 )
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+
             
-            PlacesCards(placesViewModel, coordinates)
+            val searchPlaces by placesViewModel.places.collectAsState()
+            val isPlacesLoading by placesViewModel.isLoading.collectAsState()
+            
+            PlacesCards(
+                title = "Search Results",
+                places = searchPlaces,
+                isLoading = isPlacesLoading,
+                userLocation = coordinates
+            )
             
             Spacer(modifier = Modifier.height(32.dp))
         }

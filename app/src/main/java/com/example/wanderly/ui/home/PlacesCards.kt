@@ -20,8 +20,6 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,22 +32,23 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.wanderly.BuildConfig
 import com.example.wanderly.api.PlaceResult
-import com.example.wanderly.viewmodel.PlacesViewModel
 import com.example.wanderly.ui.Loading
 import com.google.android.gms.maps.model.LatLng
 
 @Composable
-fun PlacesCards(viewModel: PlacesViewModel, userLocation: LatLng) {
-    val places by viewModel.places.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-
+fun PlacesCards(
+    title: String,
+    places: List<PlaceResult>,
+    userLocation: LatLng,
+    isLoading: Boolean = false
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
         Text(
-            text = "Places Nearby",
+            text = title,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -59,7 +58,7 @@ fun PlacesCards(viewModel: PlacesViewModel, userLocation: LatLng) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp),
+                    .height(180.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Loading()
@@ -68,7 +67,8 @@ fun PlacesCards(viewModel: PlacesViewModel, userLocation: LatLng) {
             Text(
                 "No places found nearby.",
                 modifier = Modifier.padding(16.dp),
-                color = MaterialTheme.colorScheme.outline
+                color = MaterialTheme.colorScheme.outline,
+                style = MaterialTheme.typography.bodyMedium
             )
         } else {
             LazyRow(
@@ -108,9 +108,9 @@ fun PlaceCard(place: PlaceResult, userLocation: LatLng) {
 
     ElevatedCard(
         modifier = Modifier
-            .width(280.dp)
-            .height(180.dp),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+            .width(260.dp)
+            .height(170.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp),
         shape = MaterialTheme.shapes.large
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -136,7 +136,7 @@ fun PlaceCard(place: PlaceResult, userLocation: LatLng) {
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
                             startY = 100f
                         )
                     )

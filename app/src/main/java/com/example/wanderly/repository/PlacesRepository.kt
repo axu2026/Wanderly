@@ -18,8 +18,8 @@ class PlacesRepository(
     private val listType = object : TypeToken<List<PlaceResult>>() {}.type
 
     // get nearby places from cache or api
-    suspend fun getNearbyPlaces(lat: Double, lon: Double, type: String): List<PlaceResult> {
-        val key = generateKey(lat, lon, type)
+    suspend fun getNearbyPlaces(lat: Double, lon: Double, keyword: String, cacheKeyPrefix: String = ""): List<PlaceResult> {
+        val key = generateKey(lat, lon, keyword, cacheKeyPrefix)
         val cached = dao.getCache(key)
 
         // if cached is less than 24 hours old, return cached
@@ -32,7 +32,7 @@ class PlacesRepository(
         // if not cached, fetch from api
         val response = api.getNearbyPlaces(
             location = "$lat,$lon",
-            keyword = type,
+            keyword = keyword,
             apiKey = BuildConfig.MAPS_API_KEY
         )
 
@@ -55,11 +55,17 @@ class PlacesRepository(
         return results
     }
 
+    // specific method for important spots
+    suspend fun getImportantSpots(lat: Double, lon: Double): List<PlaceResult> {
+        return getNearbyPlaces(lat, lon, "tourist attraction|historical landmark", "important")
+    }
+
     // generate a unique key for caching
-    private fun generateKey(lat: Double, lon: Double, type: String): String {
+    private fun generateKey(lat: Double, lon: Double, keyword: String, prefix: String): String {
         val latKey = (lat * 100).toInt()
         val lonKey = (lon * 100).toInt()
-        return "$latKey:$lonKey:$type"
+        val baseKey = "$latKey:$lonKey:$keyword"
+        return if (prefix.isEmpty()) baseKey else "$prefix:$baseKey"
     }
 
     // encode and decode places for caching

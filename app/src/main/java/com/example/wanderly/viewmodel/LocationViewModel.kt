@@ -27,32 +27,31 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
     private val _state = MutableStateFlow(LocationState())
     val state: StateFlow<LocationState> = _state
 
-    // last location and min distance before recalling api
     private var lastEmittedLocation: Location? = null
-    private val minDistanceMeters = 50f // Reduced for better emulator testing
 
-    // location services
+    private val minDistanceMeters = 5f 
+
     private var fusedLocationClient = LocationServices.getFusedLocationProviderClient(application)
+    
     private var locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000L)
         .setMinUpdateIntervalMillis(2000L)
+        .setWaitForAccurateLocation(false)
         .build()
+        
     private var locationCallback: LocationCallback? = null
 
-    // start location updates
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     fun startLocationUpdates() {
         if (!hasLocationPermission()) return
 
-        // 1. Get last known location immediately to prevent hanging
         try {
             fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
                 loc?.let { updateState(it) }
             }
         } catch (e: Exception) {
-            Log.e("LocationViewModel", "Error getting last location: ${e.message}")
+            Log.e("LocationViewModel", "Error: ${e.message}")
         }
 
-        // 2. Setup periodic updates
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 locationResult.lastLocation?.let { updateState(it) }
@@ -66,14 +65,17 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
                 Looper.getMainLooper()
             )
         } catch (e: Exception) {
-            Log.e("LocationViewModel", "Error requesting updates: ${e.message}")
+            Log.e("LocationViewModel", "Error: ${e.message}")
         }
     }
 
     private fun updateState(loc: Location) {
         val previous = lastEmittedLocation
+        
+        // Noise filter logic
         if (previous != null && previous.distanceTo(loc) < minDistanceMeters) return
 
+        Log.d("LocationViewModel", "New Location: ${loc.latitude}, ${loc.longitude}")
         lastEmittedLocation = loc
         _state.value = LocationState(loc.latitude, loc.longitude)
     }
