@@ -7,7 +7,7 @@ import com.example.wanderly.local.places.PlacesEntity
 
 @Database(
     entities = [PlacesEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

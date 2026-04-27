@@ -1,6 +1,5 @@
 package com.example.wanderly.api
 
-import com.google.android.gms.maps.model.LatLng
 import retrofit2.http.GET
 import retrofit2.http.Query
 
@@ -24,7 +23,12 @@ data class PlaceResult(
 
 // helper classes for api result
 data class Geometry(
-    val location: LatLng
+    val location: ApiLocation
+)
+
+data class ApiLocation(
+    val lat: Double,
+    val lng: Double
 )
 
 data class Photo(

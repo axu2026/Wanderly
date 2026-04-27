@@ -1,54 +1,183 @@
 package com.example.wanderly.ui.home
 
+import android.location.Location
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.material3.Card
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.example.wanderly.BuildConfig
+import com.example.wanderly.api.PlaceResult
 import com.example.wanderly.viewmodel.PlacesViewModel
 import com.example.wanderly.ui.Loading
-import androidx.compose.foundation.lazy.items
+import com.google.android.gms.maps.model.LatLng
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlacesCards(viewModel: PlacesViewModel) {
+fun PlacesCards(viewModel: PlacesViewModel, userLocation: LatLng) {
     val places by viewModel.places.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    if (isLoading) {
-        Loading()
-    } else if (places.isEmpty()) {
-        Text("No Places Nearby!")
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        Text(
+            text = "Places Nearby",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Loading()
+            }
+        } else if (places.isEmpty()) {
+            Text(
+                "No places found nearby.",
+                modifier = Modifier.padding(16.dp),
+                color = MaterialTheme.colorScheme.outline
+            )
+        } else {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(places) { place ->
+                    PlaceCard(place, userLocation)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PlaceCard(place: PlaceResult, userLocation: LatLng) {
+    val photoReference = place.photos?.firstOrNull()?.photo_reference
+    val imageUrl = if (photoReference != null) {
+        "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=$photoReference&key=${BuildConfig.MAPS_API_KEY}"
+    } else null
+
+    val distance = remember(place, userLocation) {
+        val results = FloatArray(1)
+        Location.distanceBetween(
+            userLocation.latitude, userLocation.longitude,
+            place.geometry.location.lat, place.geometry.location.lng,
+            results
+        )
+        results[0]
+    }
+
+    val distanceText = if (distance < 1000) {
+        "${distance.toInt()}m"
     } else {
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(places) { place ->
-                Card(
+        String.format("%.1fkm", distance / 1000)
+    }
+
+    ElevatedCard(
+        modifier = Modifier
+            .width(280.dp)
+            .height(180.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+        shape = MaterialTheme.shapes.large
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Background Image
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
                     modifier = Modifier
-                        .width(200.dp)
-                        .height(150.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            place.name,
-                            style = MaterialTheme.typography.titleMedium
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                )
+            }
+
+            // Scrim for readability
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                            startY = 100f
                         )
-                    }
+                    )
+            )
+
+            // Content
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Bottom
+            ) {
+                Text(
+                    text = place.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = place.vicinity ?: "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.8f),
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = distanceText,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

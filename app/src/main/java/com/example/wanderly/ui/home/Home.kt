@@ -15,10 +15,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -154,26 +157,46 @@ fun Home(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { placesViewModel.updateSearchQuery(it) },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search for places (e.g. cafe, park)") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(
-                    onSearch = {
-                        placesViewModel.fetchPlaces(coordinates)
-                        focusManager.clearFocus()
-                    }
-                ),
-                shape = MaterialTheme.shapes.medium
-            )
+            ElevatedCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp),
+                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = { placesViewModel.updateSearchQuery(it) },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Search for places (e.g. cafe, park)") },
+                    leadingIcon = { 
+                        Icon(
+                            Icons.Default.Search, 
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary 
+                        ) 
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            placesViewModel.fetchPlaces(coordinates)
+                            focusManager.clearFocus()
+                        }
+                    ),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        cursorColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+            }
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            PlacesCards(placesViewModel)
+            PlacesCards(placesViewModel, coordinates)
             
             Spacer(modifier = Modifier.height(32.dp))
         }
