@@ -15,7 +15,10 @@ data class Main(
 )
 
 data class Weather(
-    val description: String
+    val id: Int,
+    val main: String,
+    val description: String,
+    val icon: String
 )
 
 // api interface for calling Weather API

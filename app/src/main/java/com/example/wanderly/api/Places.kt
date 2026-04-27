@@ -40,6 +40,12 @@ interface PlacesApi {
         @Query("keyword") keyword: String,
         @Query("key") apiKey: String
     ): PlacesResponse
+
+    @GET("place/textsearch/json")
+    suspend fun findPlace(
+        @Query("query") query: String,
+        @Query("key") apiKey: String
+    ): PlacesResponse
 }
 
 // retrofit instance for Places API

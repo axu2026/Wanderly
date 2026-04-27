@@ -7,7 +7,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.wanderly.api.PlacesRetrofitInstance
+import com.example.wanderly.repository.HomeRepository
+import com.example.wanderly.ui.map.getBestLocationName
 import com.example.wanderly.ui.map.reverseGeocode
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.Dispatchers
@@ -16,8 +18,11 @@ import kotlinx.coroutines.withContext
 
 // view model for home screen
 class HomeViewModel: ViewModel() {
+    private val repository = HomeRepository(PlacesRetrofitInstance.api)
+    
     var address by mutableStateOf<Address?>(null)
     var isLoading by mutableStateOf(false)
+    var backgroundImageUrl by mutableStateOf<String?>(null)
     private var lastCoordinates: LatLng? = null
 
     // fetch address from coordinates
@@ -31,9 +36,19 @@ class HomeViewModel: ViewModel() {
         // fetch address from coordinates using coroutine
         viewModelScope.launch {
             isLoading = true
-            address = withContext(Dispatchers.IO) {
+            val resolvedAddress = withContext(Dispatchers.IO) {
                 reverseGeocode(context, coordinates.latitude, coordinates.longitude)
             }
+            address = resolvedAddress
+            
+            // Once address is resolved, try to fetch a background image
+            resolvedAddress?.let {
+                val cityName = getBestLocationName(it)
+                if (cityName != null) {
+                    backgroundImageUrl = repository.getCityImageUrl(cityName)
+                }
+            }
+
             isLoading = false
         }
     }

@@ -1,18 +1,27 @@
 package com.example.wanderly.ui.home
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.wanderly.ui.Loading
@@ -20,18 +29,45 @@ import com.example.wanderly.viewmodel.InformationViewModel
 
 @Composable
 fun InfoCard(viewModel: InformationViewModel = viewModel()) {
-    Card(
+    var expanded by remember { mutableStateOf(false) }
+    val information by viewModel.information.collectAsState()
+    val loading by viewModel.isLoading.collectAsState()
+
+    ElevatedCard(
+        onClick = { expanded = !expanded },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = 3.dp,
+            pressedElevation = 6.dp
+        )
     ) {
         Column(
             modifier = Modifier
-                .padding(24.dp)
+                .padding(20.dp)
+                .animateContentSize()
         ) {
-            val information by viewModel.information.collectAsState()
-            val loading by viewModel.isLoading.collectAsState()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Local Information",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+                if (!loading && information != null) {
+                    Text(
+                        text = "Wikipedia",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             if (loading) {
                 Loading()
@@ -39,18 +75,34 @@ fun InfoCard(viewModel: InformationViewModel = viewModel()) {
                 val data = information!!
 
                 Text(
-                    text = "Info",
-                    style = MaterialTheme.typography.headlineLarge
+                    text = data.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+                
                 Spacer(modifier = Modifier.height(8.dp))
+                
                 Text(
                     text = data.extract,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = if (expanded) Int.MAX_VALUE else 3,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = MaterialTheme.typography.bodyLarge.lineHeight
+                )
+                
+                Text(
+                    text = if (expanded) "Read less" else "Read more",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 12.dp)
                 )
             } else {
                 Text(
-                    text = "No information available",
-                    style = MaterialTheme.typography.bodyMedium
+                    text = "No detailed information found for this area.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.outline
                 )
             }
         }
