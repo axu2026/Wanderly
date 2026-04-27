@@ -24,6 +24,7 @@ import com.example.wanderly.ui.map.*
 import com.example.wanderly.viewmodel.*
 import com.example.wanderly.ui.Loading
 
+// the home screen composable
 @Composable
 fun Home(
     viewModel: HomeViewModel = viewModel(),
@@ -36,15 +37,17 @@ fun Home(
     val isLoading = viewModel.isLoading
     val scrollState = rememberScrollState()
 
+    // fetch data when coordinates change
     LaunchedEffect(coordinates) {
         viewModel.geocodeAddressIfNeeded(context, coordinates)
         weatherViewModel.fetchWeather(coordinates)
-        placesViewModel.searchNearby(coordinates, "coffee")
+        placesViewModel.fetchPlaces(coordinates)
     }
 
+    // show loading screen while fetching data
     if (isLoading) {
         Loading()
-    } else if (address != null) {
+    } else if (address != null) { // show home screen when data is available
         Column(
             modifier = Modifier.fillMaxSize()
                 .padding(16.dp)
@@ -73,6 +76,6 @@ fun Home(
             PlacesCards(placesViewModel)
         }
     } else {
-        Loading() // change later
+        Loading()
     }
 }

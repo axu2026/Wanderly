@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import com.example.wanderly.viewmodel.PlacesViewModel
 import com.example.wanderly.ui.Loading
 import androidx.compose.foundation.lazy.items
-import com.example.wanderly.api.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,13 +48,6 @@ fun PlacesCards(viewModel: PlacesViewModel) {
                             place.name,
                             style = MaterialTheme.typography.titleMedium
                         )
-                        Text(
-                            place.categories.firstOrNull()?.name ?: "",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        place.distance?.let {
-                            Text(formatDistance(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-                        }
                     }
                 }
             }

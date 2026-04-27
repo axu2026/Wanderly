@@ -11,6 +11,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 
+// map composable for the app
 @Composable
 fun Map(coordinates: LatLng) {
     val cameraPositionState = rememberCameraPositionState {

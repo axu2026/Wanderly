@@ -1,87 +1,56 @@
 package com.example.wanderly.api
 
-import com.google.gson.annotations.SerializedName
-import okhttp3.OkHttpClient
+import com.google.android.gms.maps.model.LatLng
 import retrofit2.http.GET
 import retrofit2.http.Query
 
-data class Location(
-    val address: String? = null,
-    val locality: String? = null,
-    val region: String? = null
+// api result from calling Places API
+data class PlacesResponse(
+    val results: List<PlaceResult>,
+    val status: String,
+    val next_page_token: String?
 )
 
-data class Category(
-    val id: Int,
-    val name: String
-)
-
-data class Place(
-    @SerializedName("fsq_id")
-    val id: String,
+// result of a single place
+data class PlaceResult(
     val name: String,
-    val distance: Int?,
-    val categories: List<Category> = emptyList(),
-    val location: Location? = null
+    val place_id: String,
+    val geometry: Geometry,
+    val rating: Double?,
+    val vicinity: String?,
+    val types: List<String>,
+    val photos: List<Photo>?
 )
 
-data class PlacesSearchResponse(
-    val results: List<Place>
+// helper classes for api result
+data class Geometry(
+    val location: LatLng
 )
 
-interface FoursquareApi {
-    @GET("places/search")
-    suspend fun searchNearby(
-        @Query("ll") ll: String,
-        @Query("radius") radius: Int = 1000,
-        @Query("query") query: String? = null,
-        @Query("limit") limit: Int = 20,
-        @Query("fields") fields: String = "fsq_id,name,distance,categories,location"
-    ): PlacesSearchResponse
+data class Photo(
+    val photo_reference: String
+)
+
+// api interface for calling Places API
+interface PlacesApi {
+    @GET("place/nearbysearch/json")
+    suspend fun getNearbyPlaces(
+        @Query("location") location: String,
+        @Query("radius") radius: Int = 1500,
+        @Query("type") type: String,
+        @Query("key") apiKey: String
+    ): PlacesResponse
 }
 
-object FoursquareClient {
+// retrofit instance for Places API
+object PlacesRetrofitInstance {
+    private const val BASE_URL = "https://maps.googleapis.com/maps/api/"
 
-    private const val BASE_URL = "https://api.foursquare.com/v3/places"
-
-    val api: FoursquareApi by lazy {
+    val api: PlacesApi by lazy {
         retrofit2.Retrofit.Builder()
             .baseUrl(BASE_URL)
             .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
-            .client(
-                OkHttpClient.Builder()
-                    .addInterceptor { chain ->
-                        val request = chain.request().newBuilder()
-                            .addHeader(
-                                "Authorization",
-                                ""
-                            )
-                            .build()
-                        chain.proceed(request)
-                    }
-                    .build()
-            )
             .build()
-            .create(FoursquareApi::class.java)
-    }
-}
-
-class PlacesRepository {
-    suspend fun getNearbyPlaces(lat: Double, lon: Double, query: String? = null): List<Place> {
-        val response = FoursquareClient.api.searchNearby(
-            ll = "$lat,$lon",
-            query = query,
-            radius = 3000,
-            limit = 25
-        )
-        return response.results
-    }
-}
-
-fun formatDistance(meters: Int?): String {
-    return when {
-        meters == null -> ""
-        meters < 1000 -> "$meters m"
-        else -> String.format("%.1f km", meters / 1000.0)
+            .create(PlacesApi::class.java)
     }
 }

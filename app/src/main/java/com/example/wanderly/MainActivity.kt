@@ -46,16 +46,23 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// the wanderly app main composable
 @Composable
 fun WanderlyApp(
     viewModel: LocationViewModel = viewModel()
 ) {
+    // location viewModel
     val state by viewModel.state.collectAsState()
+
+    // create all the view models necessary for state
     val homeViewModel: HomeViewModel = viewModel()
     val weatherViewModel: WeatherViewModel = viewModel()
     val placesViewModel: PlacesViewModel = viewModel()
+
+    // mutable state for navigation
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
 
+    // permission launcher for location
     val requestPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
@@ -68,6 +75,7 @@ fun WanderlyApp(
         }
     }
 
+    // request location permission on launch
     LaunchedEffect(Unit) {
         if (!viewModel.hasLocationPermission()) {
             requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -80,6 +88,7 @@ fun WanderlyApp(
         }
     }
 
+    // run the app if location is available
     if (state.latitude != null && state.longitude != null) {
         NavigationSuiteScaffold(
             navigationSuiteItems = {
@@ -98,6 +107,7 @@ fun WanderlyApp(
                 }
             }
         ) {
+            // convert state to latlng for each view
             val coordinates = LatLng(state.latitude!!, state.longitude!!)
 
             when (currentDestination) {
@@ -111,6 +121,7 @@ fun WanderlyApp(
     }
 }
 
+// for navigation
 enum class AppDestinations(
     val label: String,
     val icon: ImageVector,

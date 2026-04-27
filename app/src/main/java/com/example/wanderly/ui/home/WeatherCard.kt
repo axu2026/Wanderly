@@ -21,6 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.wanderly.viewmodel.WeatherViewModel
 import com.example.wanderly.ui.Loading
 
+// weather card for the home screen
 @Composable
 fun WeatherCard(viewModel: WeatherViewModel = viewModel()) {
     Card(
@@ -56,7 +57,7 @@ fun WeatherCard(viewModel: WeatherViewModel = viewModel()) {
                 )
             }
         } else {
-            Loading() // change later
+            Loading()
         }
     }
 }

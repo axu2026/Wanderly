@@ -14,16 +14,21 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+// view model for home screen
 class HomeViewModel: ViewModel() {
     var address by mutableStateOf<Address?>(null)
     var isLoading by mutableStateOf(false)
     private var lastCoordinates: LatLng? = null
 
+    // fetch address from coordinates
     fun geocodeAddressIfNeeded(context: Context, coordinates: LatLng) {
+        // if coordinates are the same, return
         if (address != null && coordinates == lastCoordinates) return
 
+        // update coordinates
         lastCoordinates = coordinates
 
+        // fetch address from coordinates using coroutine
         viewModelScope.launch {
             isLoading = true
             address = withContext(Dispatchers.IO) {
