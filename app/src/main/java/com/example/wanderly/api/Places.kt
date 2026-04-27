@@ -37,7 +37,7 @@ interface PlacesApi {
     suspend fun getNearbyPlaces(
         @Query("location") location: String,
         @Query("radius") radius: Int = 1500,
-        @Query("type") type: String,
+        @Query("keyword") keyword: String,
         @Query("key") apiKey: String
     ): PlacesResponse
 }

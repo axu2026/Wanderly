@@ -15,45 +15,43 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.wanderly.viewmodel.WeatherViewModel
 import com.example.wanderly.ui.Loading
+import com.example.wanderly.viewmodel.InformationViewModel
 
-// weather card for the home screen
 @Composable
-fun WeatherCard(viewModel: WeatherViewModel = viewModel()) {
+fun InfoCard(viewModel: InformationViewModel = viewModel()) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
-        val weather by viewModel.weather.collectAsState()
-        val loading by viewModel.isLoading.collectAsState()
-
         Column(
             modifier = Modifier
-                .padding(24.dp),
+                .padding(24.dp)
         ) {
+            val information by viewModel.information.collectAsState()
+            val loading by viewModel.isLoading.collectAsState()
+
             if (loading) {
                 Loading()
-            } else if (weather != null) {
-                val data = weather!!
+            } else if (information != null) {
+                val data = information!!
 
                 Text(
-                    text = "Weather",
+                    text = "Info",
                     style = MaterialTheme.typography.headlineLarge
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "${data.main.temp}°C",
-                    style = MaterialTheme.typography.headlineMedium
-                )
-                Text(
-                    text = data.weather.firstOrNull()?.description ?: "",
+                    text = data.extract,
                     style = MaterialTheme.typography.bodyMedium
                 )
             } else {
-                Loading()
+                Text(
+                    text = "No information available",
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
     }

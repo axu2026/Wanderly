@@ -32,7 +32,7 @@ class PlacesRepository(
         // if not cached, fetch from api
         val response = api.getNearbyPlaces(
             location = "$lat,$lon",
-            type = type,
+            keyword = type,
             apiKey = BuildConfig.MAPS_API_KEY
         )
 

@@ -58,6 +58,7 @@ fun WanderlyApp(
     val homeViewModel: HomeViewModel = viewModel()
     val weatherViewModel: WeatherViewModel = viewModel()
     val placesViewModel: PlacesViewModel = viewModel()
+    val informationViewModel: InformationViewModel = viewModel()
 
     // mutable state for navigation
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
@@ -111,7 +112,7 @@ fun WanderlyApp(
             val coordinates = LatLng(state.latitude!!, state.longitude!!)
 
             when (currentDestination) {
-                AppDestinations.HOME -> Home(homeViewModel, weatherViewModel, placesViewModel, coordinates)
+                AppDestinations.HOME -> Home(homeViewModel, weatherViewModel, placesViewModel, informationViewModel, coordinates)
                 AppDestinations.PROFILE -> Profile()
                 AppDestinations.MAP -> Map(coordinates)
             }

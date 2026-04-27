@@ -23,19 +23,25 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
 
     private val _places = MutableStateFlow<List<PlaceResult>>(emptyList())
     val places: StateFlow<List<PlaceResult>> = _places
+    
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    // fetch places from repository
-    fun fetchPlaces(coordinates: LatLng) {
+    private val _searchQuery = MutableStateFlow("restaurant")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun fetchPlaces(coordinates: LatLng, query: String = _searchQuery.value) {
         viewModelScope.launch {
             _isLoading.value = true
-            val lat = coordinates.latitude
-            val lon = coordinates.longitude
-
             try {
                 val result = repository.getNearbyPlaces(
-                    lat, lon, "restaurant"
+                    coordinates.latitude,
+                    coordinates.longitude,
+                    query
                 )
                 _places.value = result
             } catch (e: Exception) {
