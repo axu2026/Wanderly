@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Looper
+import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
@@ -28,12 +29,12 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
 
     // last location and min distance before recalling api
     private var lastEmittedLocation: Location? = null
-    private val minDistanceMeters = 150f
+    private val minDistanceMeters = 50f // Reduced for better emulator testing
 
     // location services
     private var fusedLocationClient = LocationServices.getFusedLocationProviderClient(application)
-    private var locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 10000L)
-        .setMinUpdateIntervalMillis(5000L)
+    private var locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000L)
+        .setMinUpdateIntervalMillis(2000L)
         .build()
     private var locationCallback: LocationCallback? = null
 
@@ -42,52 +43,49 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
     fun startLocationUpdates() {
         if (!hasLocationPermission()) return
 
+        // 1. Get last known location immediately to prevent hanging
+        try {
+            fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
+                loc?.let { updateState(it) }
+            }
+        } catch (e: Exception) {
+            Log.e("LocationViewModel", "Error getting last location: ${e.message}")
+        }
+
+        // 2. Setup periodic updates
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
-                val loc = locationResult.lastLocation ?: return
-                val previous = lastEmittedLocation
-
-                // if location is too close to previous location, ignore
-                if (previous != null) {
-                    val distance = previous.distanceTo(loc)
-
-                    if (distance < minDistanceMeters) {
-                        return
-                    }
-                }
-
-                // update last location
-                lastEmittedLocation = loc
-
-                _state.value = LocationState(
-                    loc.latitude,
-                    loc.longitude,
-                )
+                locationResult.lastLocation?.let { updateState(it) }
             }
         }
 
-        fusedLocationClient.requestLocationUpdates(
-            locationRequest,
-            locationCallback!!,
-            Looper.getMainLooper()
-        )
+        try {
+            fusedLocationClient.requestLocationUpdates(
+                locationRequest,
+                locationCallback!!,
+                Looper.getMainLooper()
+            )
+        } catch (e: Exception) {
+            Log.e("LocationViewModel", "Error requesting updates: ${e.message}")
+        }
     }
 
-    // stop using location services
-    fun stopLocationUpdates() {
-        locationCallback?.let {
-            fusedLocationClient.removeLocationUpdates(it)
-        }
+    private fun updateState(loc: Location) {
+        val previous = lastEmittedLocation
+        if (previous != null && previous.distanceTo(loc) < minDistanceMeters) return
 
+        lastEmittedLocation = loc
+        _state.value = LocationState(loc.latitude, loc.longitude)
+    }
+
+    fun stopLocationUpdates() {
+        locationCallback?.let { fusedLocationClient.removeLocationUpdates(it) }
         locationCallback = null
     }
 
-    // check if app has permission to use location services
     fun hasLocationPermission(): Boolean {
-        val context = getApplication<Application>()
         return ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.ACCESS_FINE_LOCATION
+            getApplication(), Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
     }
 
