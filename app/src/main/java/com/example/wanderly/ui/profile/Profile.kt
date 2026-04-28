@@ -12,12 +12,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 
+import android.location.Address
+import com.example.wanderly.ui.map.formatAddress
+
 @Composable
-fun Profile() {
+fun Profile(address: Address?) {
     var isEditMode by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("John Doe") }
     var email by remember { mutableStateOf("john.doe@example.com") }
-    var location by remember { mutableStateOf("San Francisco, CA") }
+    var location by remember { mutableStateOf(formatAddress(address)) }
+
+    // Update location if address changes and we are NOT in edit mode
+    LaunchedEffect(address) {
+        if (!isEditMode) {
+            location = formatAddress(address)
+        }
+    }
 
     Column(
         modifier = Modifier

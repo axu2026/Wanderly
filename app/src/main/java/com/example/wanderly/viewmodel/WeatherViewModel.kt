@@ -2,6 +2,7 @@ package com.example.wanderly.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.wanderly.BuildConfig
 import com.example.wanderly.api.*
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +26,7 @@ class WeatherViewModel: ViewModel() {
                 val result = RetrofitInstance.api.getWeather(
                     lat,
                     lon,
-                    "" // change eventually
+                    BuildConfig.WEATHER_API_KEY,
                 )
                 _weather.value = result
             } catch (e: Exception) {

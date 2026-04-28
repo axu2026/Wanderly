@@ -10,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
@@ -20,12 +21,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
+import com.example.wanderly.data.model.ItineraryDay
+import com.example.wanderly.data.model.Place
 import com.example.wanderly.ui.theme.WanderlyTheme
 import com.example.wanderly.viewmodel.LocationViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -56,7 +58,12 @@ fun WanderlyApp(
     val state by viewModel.state.collectAsState()
     val homeViewModel: HomeViewModel = viewModel()
     val weatherViewModel: WeatherViewModel = viewModel()
+    val itineraryViewModel: ItineraryViewModel = viewModel()
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
+    var showItineraryDetails by rememberSaveable { mutableStateOf(false) }
+    var focusedPlace by remember { mutableStateOf<Place?>(null) }
+    var focusedDay by remember { mutableStateOf<ItineraryDay?>(null) }
+    val tripState by itineraryViewModel.uiState.collectAsState()
 
     val requestPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -104,8 +111,37 @@ fun WanderlyApp(
 
             when (currentDestination) {
                 AppDestinations.HOME -> Home(homeViewModel, weatherViewModel, coordinates)
-                AppDestinations.PROFILE -> Profile()
-                AppDestinations.MAP -> Map(coordinates)
+                AppDestinations.ITINERARY -> {
+                    if (showItineraryDetails) {
+                        com.example.wanderly.ui.itinerary.ItineraryScreen(
+                            viewModel = itineraryViewModel,
+                            weatherViewModel = weatherViewModel,
+                            onBack = { showItineraryDetails = false },
+                            onPlaceClick = { place ->
+                                focusedPlace = place
+                                focusedDay = null
+                                currentDestination = AppDestinations.MAP
+                            },
+                            onDayClick = { day ->
+                                focusedDay = day
+                                focusedPlace = null
+                                currentDestination = AppDestinations.MAP
+                            }
+                        )
+                    } else {
+                        com.example.wanderly.ui.itinerary.TripSetupScreen(
+                            viewModel = itineraryViewModel,
+                            onNavigateToItinerary = { showItineraryDetails = true }
+                        )
+                    }
+                }
+                AppDestinations.PROFILE -> Profile(homeViewModel.address)
+                AppDestinations.MAP -> Map(
+                    coordinates = coordinates,
+                    focusedPlace = focusedPlace,
+                    focusedDay = focusedDay,
+                    transportMode = tripState.transportMode,
+                )
             }
         }
     } else {
@@ -118,30 +154,8 @@ enum class AppDestinations(
     val icon: ImageVector,
 ) {
     HOME("Home", Icons.Default.Home),
+    ITINERARY("Itinerary", Icons.Default.DateRange),
     MAP("Map", Icons.Default.LocationOn),
-        PROFILE("Profile", Icons.Default.AccountBox),
+    PROFILE("Profile", Icons.Default.AccountBox),
 }
 
-@Composable
-fun Coordinates(lat: Double, lng: Double, modifier: Modifier = Modifier) {
-    Text(
-        text = "lat: $lat, lng: $lng",
-        modifier = modifier
-    )
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    WanderlyTheme {
-        Greeting("Android")
-    }
-}
