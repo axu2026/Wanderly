@@ -10,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
@@ -24,6 +25,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.wanderly.data.model.ItineraryDay
+import com.example.wanderly.data.model.Place
 import com.example.wanderly.ui.theme.WanderlyTheme
 import com.example.wanderly.viewmodel.LocationViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -58,11 +61,16 @@ fun WanderlyApp(
     // create all the view models necessary for state
     val homeViewModel: HomeViewModel = viewModel()
     val weatherViewModel: WeatherViewModel = viewModel()
+    val itineraryViewModel: ItineraryViewModel = viewModel()
     val placesViewModel: PlacesViewModel = viewModel()
     val informationViewModel: InformationViewModel = viewModel()
 
     // mutable state for navigation
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
+    var showItineraryDetails by rememberSaveable { mutableStateOf(false) }
+    var focusedPlace by remember { mutableStateOf<Place?>(null) }
+    var focusedDay by remember { mutableStateOf<ItineraryDay?>(null) }
+    val tripState by itineraryViewModel.uiState.collectAsState()
 
     // State to track if we should focus on a specific location on the map
     var targetLocation by remember { mutableStateOf<LatLng?>(null) }
@@ -102,10 +110,14 @@ fun WanderlyApp(
                         icon = { Icon(it.icon, contentDescription = it.label) },
                         label = { Text(it.label) },
                         selected = it == currentDestination,
-                        onClick = { 
+                        onClick = {
                             currentDestination = it
-                            // Clear target location when manually switching tabs
-                            if (it != AppDestinations.MAP) targetLocation = null
+                            // Clear map focus when manually switching tabs
+                            if (it != AppDestinations.MAP) {
+                                targetLocation = null
+                                focusedPlace = null
+                                focusedDay = null
+                            }
                         }
                     )
                 }
@@ -115,20 +127,51 @@ fun WanderlyApp(
 
             when (currentDestination) {
                 AppDestinations.HOME -> Home(
-                    homeViewModel, 
-                    weatherViewModel, 
-                    placesViewModel, 
-                    informationViewModel, 
+                    homeViewModel,
+                    weatherViewModel,
+                    placesViewModel,
+                    informationViewModel,
                     userCoordinates,
                     onPlaceClick = { location ->
                         targetLocation = location
+                        focusedPlace = null
+                        focusedDay = null
                         currentDestination = AppDestinations.MAP
                     }
                 )
-                AppDestinations.PROFILE -> Profile()
+                AppDestinations.ITINERARY -> {
+                    if (showItineraryDetails) {
+                        com.example.wanderly.ui.itinerary.ItineraryScreen(
+                            viewModel = itineraryViewModel,
+                            weatherViewModel = weatherViewModel,
+                            onBack = { showItineraryDetails = false },
+                            onPlaceClick = { place ->
+                                focusedPlace = place
+                                focusedDay = null
+                                targetLocation = null
+                                currentDestination = AppDestinations.MAP
+                            },
+                            onDayClick = { day ->
+                                focusedDay = day
+                                focusedPlace = null
+                                targetLocation = null
+                                currentDestination = AppDestinations.MAP
+                            }
+                        )
+                    } else {
+                        com.example.wanderly.ui.itinerary.TripSetupScreen(
+                            viewModel = itineraryViewModel,
+                            onNavigateToItinerary = { showItineraryDetails = true }
+                        )
+                    }
+                }
+                AppDestinations.PROFILE -> Profile(homeViewModel.address)
                 AppDestinations.MAP -> Map(
                     userCoordinates = userCoordinates,
-                    targetLocation = targetLocation
+                    targetLocation = targetLocation,
+                    focusedPlace = focusedPlace,
+                    focusedDay = focusedDay,
+                    transportMode = tripState.transportMode,
                 )
             }
         }
@@ -143,6 +186,7 @@ enum class AppDestinations(
     val icon: ImageVector,
 ) {
     HOME("Home", Icons.Default.Home),
+    ITINERARY("Itinerary", Icons.Default.DateRange),
     MAP("Map", Icons.Default.LocationOn),
     PROFILE("Profile", Icons.Default.AccountBox),
 }
