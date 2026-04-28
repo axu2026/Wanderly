@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -63,6 +64,9 @@ fun WanderlyApp(
     // mutable state for navigation
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
 
+    // State to track if we should focus on a specific location on the map
+    var targetLocation by remember { mutableStateOf<LatLng?>(null) }
+
     // permission launcher for location
     val requestPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -95,26 +99,37 @@ fun WanderlyApp(
             navigationSuiteItems = {
                 AppDestinations.entries.forEach {
                     item(
-                        icon = {
-                            Icon(
-                                it.icon,
-                                contentDescription = it.label
-                            )
-                        },
+                        icon = { Icon(it.icon, contentDescription = it.label) },
                         label = { Text(it.label) },
                         selected = it == currentDestination,
-                        onClick = { currentDestination = it }
+                        onClick = { 
+                            currentDestination = it
+                            // Clear target location when manually switching tabs
+                            if (it != AppDestinations.MAP) targetLocation = null
+                        }
                     )
                 }
             }
         ) {
-            // convert state to latlng for each view
-            val coordinates = LatLng(state.latitude!!, state.longitude!!)
+            val userCoordinates = LatLng(state.latitude!!, state.longitude!!)
 
             when (currentDestination) {
-                AppDestinations.HOME -> Home(homeViewModel, weatherViewModel, placesViewModel, informationViewModel, coordinates)
+                AppDestinations.HOME -> Home(
+                    homeViewModel, 
+                    weatherViewModel, 
+                    placesViewModel, 
+                    informationViewModel, 
+                    userCoordinates,
+                    onPlaceClick = { location ->
+                        targetLocation = location
+                        currentDestination = AppDestinations.MAP
+                    }
+                )
                 AppDestinations.PROFILE -> Profile()
-                AppDestinations.MAP -> Map(coordinates)
+                AppDestinations.MAP -> Map(
+                    userCoordinates = userCoordinates,
+                    targetLocation = targetLocation
+                )
             }
         }
     } else {

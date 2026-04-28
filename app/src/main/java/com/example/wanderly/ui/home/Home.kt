@@ -52,7 +52,8 @@ fun Home(
     weatherViewModel: WeatherViewModel = viewModel(),
     placesViewModel: PlacesViewModel = viewModel(),
     informationViewModel: InformationViewModel = viewModel(),
-    coordinates: LatLng
+    coordinates: LatLng,
+    onPlaceClick: (LatLng) -> Unit = {}
 ) {
     val context = LocalContext.current
     val address = viewModel.address
@@ -61,6 +62,7 @@ fun Home(
     val importantSpots by placesViewModel.importantSpots.collectAsState()
     val focusManager = LocalFocusManager.current
     val backgroundImageUrl = viewModel.backgroundImageUrl
+    val closestImportantSpot by placesViewModel.closestImportantSpot.collectAsState()
 
     // fetch data when coordinates change
     LaunchedEffect(coordinates) {
@@ -74,6 +76,12 @@ fun Home(
     LaunchedEffect(address) {
         if (address != null) {
             informationViewModel.fetchInformation(address)
+        }
+    }
+
+    LaunchedEffect(closestImportantSpot) {
+        if (closestImportantSpot != null && address != null) {
+            informationViewModel.fetchClosestInformation(closestImportantSpot)
         }
     }
 
@@ -155,16 +163,29 @@ fun Home(
             Spacer(modifier = Modifier.height(48.dp))
             
             WeatherCard(weatherViewModel)
-            InfoCard(informationViewModel)
+
+            val information by informationViewModel.information.collectAsState()
+            val informationLoading by informationViewModel.informationIsLoading.collectAsState()
+            InfoCard(information, informationLoading)
             
             Spacer(modifier = Modifier.height(16.dp))
+
+            if (closestImportantSpot != null) {
+                val closestInfo by informationViewModel.closestInformation.collectAsState()
+                val closestLoading by informationViewModel.closestIsLoading.collectAsState()
+                InfoCard(closestInfo, closestLoading)
+            }
+
+            val isImportantLoading by placesViewModel.importantIsLoading.collectAsState()
 
             // Featured/Important Spots Section
             if (importantSpots.isNotEmpty()) {
                 PlacesCards(
                     title = "Featured Spots",
                     places = importantSpots,
-                    userLocation = coordinates
+                    isLoading = isImportantLoading,
+                    userLocation = coordinates,
+                    onPlaceClick = onPlaceClick
                 )
             }
             
@@ -207,16 +228,15 @@ fun Home(
                 )
             }
             
-
-            
             val searchPlaces by placesViewModel.places.collectAsState()
-            val isPlacesLoading by placesViewModel.isLoading.collectAsState()
+            val isPlacesLoading by placesViewModel.placesIsLoading.collectAsState()
             
             PlacesCards(
                 title = "Search Results",
                 places = searchPlaces,
                 isLoading = isPlacesLoading,
-                userLocation = coordinates
+                userLocation = coordinates,
+                onPlaceClick = onPlaceClick
             )
             
             Spacer(modifier = Modifier.height(32.dp))

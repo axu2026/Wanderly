@@ -1,6 +1,7 @@
 package com.example.wanderly.viewmodel
 
 import android.app.Application
+import android.location.Location
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wanderly.api.PlaceResult
@@ -22,11 +23,17 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
     private val _places = MutableStateFlow<List<PlaceResult>>(emptyList())
     val places: StateFlow<List<PlaceResult>> = _places
     
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
+    private val _placesIsLoading = MutableStateFlow(false)
+    val placesIsLoading: StateFlow<Boolean> = _placesIsLoading
 
     private val _importantSpots = MutableStateFlow<List<PlaceResult>>(emptyList())
     val importantSpots: StateFlow<List<PlaceResult>> = _importantSpots
+
+    private val _importantIsLoading = MutableStateFlow(false)
+    val importantIsLoading: StateFlow<Boolean> = _importantIsLoading
+
+    private val _closestImportantSpot = MutableStateFlow<PlaceResult?>(null)
+    val closestImportantSpot: StateFlow<PlaceResult?> = _closestImportantSpot
 
     private val _searchQuery = MutableStateFlow("restaurant")
     val searchQuery: StateFlow<String> = _searchQuery
@@ -37,7 +44,7 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
 
     fun fetchPlaces(coordinates: LatLng, query: String = _searchQuery.value) {
         viewModelScope.launch {
-            _isLoading.value = true
+            _placesIsLoading.value = true
             try {
                 val result = repository.getNearbyPlaces(
                     coordinates.latitude,
@@ -48,21 +55,39 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                _isLoading.value = false
+                _placesIsLoading.value = false
             }
         }
     }
 
     fun fetchImportantSpots(coordinates: LatLng) {
         viewModelScope.launch {
+            _importantIsLoading.value = true
             try {
                 val result = repository.getImportantSpots(
                     coordinates.latitude,
                     coordinates.longitude
                 )
                 _importantSpots.value = result
+                
+                // Find the closest spot to display detailed info
+                if (result.isNotEmpty()) {
+                    _closestImportantSpot.value = result.minByOrNull { spot ->
+                        val distanceResults = FloatArray(1)
+                        Location.distanceBetween(
+                            coordinates.latitude, coordinates.longitude,
+                            spot.geometry.location.lat, spot.geometry.location.lng,
+                            distanceResults
+                        )
+                        distanceResults[0]
+                    }
+                } else {
+                    _closestImportantSpot.value = null
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                _importantIsLoading.value = false
             }
         }
     }

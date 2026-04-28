@@ -35,13 +35,31 @@ import com.example.wanderly.api.PlaceResult
 import com.example.wanderly.ui.Loading
 import com.google.android.gms.maps.model.LatLng
 
+private data class PlaceWithDistance(
+    val place: PlaceResult,
+    val distance: Float
+)
+
 @Composable
 fun PlacesCards(
     title: String,
     places: List<PlaceResult>,
     userLocation: LatLng,
-    isLoading: Boolean = false
+    isLoading: Boolean = false,
+    onPlaceClick: (LatLng) -> Unit = {}
 ) {
+    val sortedWithDistance = remember(places, userLocation) {
+        places.map { place ->
+            val results = FloatArray(1)
+            Location.distanceBetween(
+                userLocation.latitude, userLocation.longitude,
+                place.geometry.location.lat, place.geometry.location.lng,
+                results
+            )
+            PlaceWithDistance(place, results[0])
+        }.sortedBy { it.distance }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -63,7 +81,7 @@ fun PlacesCards(
             ) {
                 Loading()
             }
-        } else if (places.isEmpty()) {
+        } else if (sortedWithDistance.isEmpty()) {
             Text(
                 "No places found nearby.",
                 modifier = Modifier.padding(16.dp),
@@ -75,8 +93,14 @@ fun PlacesCards(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(places) { place ->
-                    PlaceCard(place, userLocation)
+                items(sortedWithDistance) { item ->
+                    PlaceCard(
+                        place = item.place, 
+                        distance = item.distance,
+                        onClick = {
+                            onPlaceClick(LatLng(item.place.geometry.location.lat, item.place.geometry.location.lng))
+                        }
+                    )
                 }
             }
         }
@@ -84,21 +108,15 @@ fun PlacesCards(
 }
 
 @Composable
-fun PlaceCard(place: PlaceResult, userLocation: LatLng) {
+fun PlaceCard(
+    place: PlaceResult, 
+    distance: Float,
+    onClick: () -> Unit
+) {
     val photoReference = place.photos?.firstOrNull()?.photo_reference
     val imageUrl = if (photoReference != null) {
         "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=$photoReference&key=${BuildConfig.MAPS_API_KEY}"
     } else null
-
-    val distance = remember(place, userLocation) {
-        val results = FloatArray(1)
-        Location.distanceBetween(
-            userLocation.latitude, userLocation.longitude,
-            place.geometry.location.lat, place.geometry.location.lng,
-            results
-        )
-        results[0]
-    }
 
     val distanceText = if (distance < 1000) {
         "${distance.toInt()}m"
@@ -107,6 +125,7 @@ fun PlaceCard(place: PlaceResult, userLocation: LatLng) {
     }
 
     ElevatedCard(
+        onClick = onClick,
         modifier = Modifier
             .width(260.dp)
             .height(170.dp),
@@ -114,7 +133,6 @@ fun PlaceCard(place: PlaceResult, userLocation: LatLng) {
         shape = MaterialTheme.shapes.large
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Background Image
             if (imageUrl != null) {
                 AsyncImage(
                     model = imageUrl,
@@ -130,7 +148,6 @@ fun PlaceCard(place: PlaceResult, userLocation: LatLng) {
                 )
             }
 
-            // Scrim for readability
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -142,7 +159,6 @@ fun PlaceCard(place: PlaceResult, userLocation: LatLng) {
                     )
             )
 
-            // Content
             Column(
                 modifier = Modifier
                     .fillMaxSize()

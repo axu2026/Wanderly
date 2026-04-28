@@ -23,14 +23,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.wanderly.api.WikiSummary
 import com.example.wanderly.ui.Loading
 import com.example.wanderly.viewmodel.InformationViewModel
 
 @Composable
-fun InfoCard(viewModel: InformationViewModel = viewModel()) {
+fun InfoCard(
+    information: WikiSummary? = null,
+    loading: Boolean
+) {
     var expanded by remember { mutableStateOf(false) }
-    val information by viewModel.information.collectAsState()
-    val loading by viewModel.isLoading.collectAsState()
 
     ElevatedCard(
         onClick = { expanded = !expanded },
