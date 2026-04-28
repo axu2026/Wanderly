@@ -1,5 +1,6 @@
 package com.example.wanderly.repository
 
+import android.util.Log
 import com.example.wanderly.api.SummaryResponse
 import com.example.wanderly.api.WikiApi
 import com.example.wanderly.api.WikiSummary
@@ -17,9 +18,20 @@ class InformationRepository(
     suspend fun getNearbySummary(lat: Double, lon: Double): WikiSummary? {
         val coords = "$lat|$lon"
         val geoResult = geoWikiApi.geoSearch(coords)
-        val page = geoResult.query.geosearch.firstOrNull()
-            ?: return null
 
-        return wikiApi.getSummary(page.title)
+        for (page in geoResult.query.geosearch) {
+            try {
+                val summary = wikiApi.getSummary(page.title)
+
+                // Skip disambiguation or empty summaries
+                if (summary.type != "disambiguation" && !summary.extract.isNullOrBlank()) {
+                    return summary
+                }
+            } catch (e: Exception) {
+                Log.d("InformationRepository", "Unable to fetch summary for page: ${page.title}")
+            }
+        }
+
+        return null
     }
 }

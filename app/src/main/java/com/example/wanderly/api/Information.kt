@@ -8,6 +8,7 @@ import retrofit2.http.Query
 data class WikiSummary(
     val title: String,
     val extract: String,
+    val type: String?,
     val thumbnail: Thumbnail?
 )
 
@@ -46,7 +47,7 @@ interface GeoWikiApi {
     suspend fun geoSearch(
         @Query("gscoord") coords: String,   // "lat|lon"
         @Query("gsradius") radius: Int = 100,
-        @Query("gslimit") limit: Int = 1
+        @Query("gslimit") limit: Int = 5
     ): GeoSearchResponse
 }
 
