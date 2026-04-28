@@ -6,6 +6,7 @@ import android.location.Geocoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+// helper functions for geocoding and reverse geocoding
 suspend fun geocodeAddress(context: Context, addressString: String): Address? =
     withContext(Dispatchers.IO) {
         val geocoder = Geocoder(context)
@@ -32,6 +33,7 @@ suspend fun reverseGeocode(context: Context, lat: Double, lng: Double): Address?
         }
     }
 
+// helper functions for formatting addresses to string representation
 fun formatAddress(address: Address?): String {
     return address?.let {
         val addressLines = (0..it.maxAddressLineIndex).mapNotNull {
@@ -41,9 +43,11 @@ fun formatAddress(address: Address?): String {
     } ?: "No Address"
 }
 
+// helper function for getting the best location name from an address
 fun getBestLocationName(address: Address?): String? {
     if (address == null) return null
 
+    // try getting locality, subAdminArea, adminArea, and countryName in that order
     val candidates = arrayOf<String?>(
         address.locality,
         address.subAdminArea,

@@ -5,9 +5,9 @@ import android.content.pm.PackageManager
 import com.example.wanderly.api.NearbySearchRequest
 import com.example.wanderly.api.Center
 import com.example.wanderly.api.Circle
+import com.example.wanderly.api.ItineraryPlacesRetrofit
 import com.example.wanderly.api.LocationRestriction
 import com.example.wanderly.api.PlaceDto
-import com.example.wanderly.api.PlacesRetrofit
 import com.example.wanderly.data.model.Place
 import com.example.wanderly.ui.map.geocodeAddress
 
@@ -99,8 +99,8 @@ object PlacesRepository {
         center: Center,
         types: List<String>,
     ): List<PlaceDto> = try {
-        val response = PlacesRetrofit.api.searchNearby(
-            headers = PlacesRetrofit.headers(apiKey),
+        val response = ItineraryPlacesRetrofit.api.searchNearby(
+            headers = ItineraryPlacesRetrofit.headers(apiKey),
             body = NearbySearchRequest(
                 includedTypes = types,
                 maxResultCount = MAX_PER_QUERY,

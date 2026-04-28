@@ -1,68 +1,66 @@
 package com.example.wanderly.api
 
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.Body
-import retrofit2.http.HeaderMap
-import retrofit2.http.POST
+import retrofit2.http.GET
+import retrofit2.http.Query
 
-data class NearbySearchRequest(
-    val includedTypes: List<String>,
-    val maxResultCount: Int = 10,
-    val locationRestriction: LocationRestriction,
-    val rankPreference: String = "POPULARITY",
+// api result from calling Places API
+data class PlacesResponse(
+    val results: List<PlaceResult>,
+    val status: String,
+    val next_page_token: String?
 )
 
-data class LocationRestriction(val circle: Circle)
-data class Circle(val center: Center, val radius: Double)
-data class Center(val latitude: Double, val longitude: Double)
-
-data class NearbySearchResponse(val places: List<PlaceDto>?)
-
-data class PlaceDto(
-    val id: String?,
-    val displayName: DisplayName?,
-    val formattedAddress: String?,
-    val location: Center?,
+// result of a single place
+data class PlaceResult(
+    val name: String,
+    val place_id: String,
+    val geometry: Geometry,
     val rating: Double?,
-    val priceLevel: String?,
-    val types: List<String>?,
-    val userRatingCount: Int?,
+    val vicinity: String?,
+    val types: List<String>,
+    val photos: List<Photo>?
 )
 
-data class DisplayName(val text: String?, val languageCode: String?)
+// helper classes for api result
+data class Geometry(
+    val location: ApiLocation
+)
 
+data class ApiLocation(
+    val lat: Double,
+    val lng: Double
+)
+
+data class Photo(
+    val photo_reference: String
+)
+
+// api interface for calling Places API
 interface PlacesApi {
-    @POST("v1/places:searchNearby")
-    suspend fun searchNearby(
-        @HeaderMap headers: Map<String, String>,
-        @Body body: NearbySearchRequest,
-    ): NearbySearchResponse
+    @GET("place/nearbysearch/json")
+    suspend fun getNearbyPlaces(
+        @Query("location") location: String,
+        @Query("radius") radius: Int = 1500,
+        @Query("keyword") keyword: String,
+        @Query("key") apiKey: String
+    ): PlacesResponse
+
+    @GET("place/textsearch/json")
+    suspend fun findPlace(
+        @Query("query") query: String,
+        @Query("key") apiKey: String
+    ): PlacesResponse
 }
 
-object PlacesRetrofit {
-    private const val BASE_URL = "https://places.googleapis.com/"
+// retrofit instance for Places API
+object PlacesRetrofitInstance {
+    private const val BASE_URL = "https://maps.googleapis.com/maps/api/"
 
     val api: PlacesApi by lazy {
-        Retrofit.Builder()
+        retrofit2.Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
             .build()
             .create(PlacesApi::class.java)
     }
-
-    fun headers(apiKey: String): Map<String, String> = mapOf(
-        "X-Goog-Api-Key" to apiKey,
-        "X-Goog-FieldMask" to listOf(
-            "places.id",
-            "places.displayName",
-            "places.formattedAddress",
-            "places.location",
-            "places.rating",
-            "places.priceLevel",
-            "places.types",
-            "places.userRatingCount",
-        ).joinToString(","),
-        "Content-Type" to "application/json",
-    )
 }
