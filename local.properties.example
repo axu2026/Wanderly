@@ -1,0 +1,18 @@
+# Copy this file to `local.properties` (same directory) and fill in your own
+# API key values. Your real `local.properties` is gitignored — keys you put
+# there will never be committed.
+#
+# Setup:
+#   1. Get a Google Cloud API key. Enable "Maps SDK for Android",
+#      "Places API (New)", and "Places API" (legacy) on the project.
+#   2. Get an OpenWeatherMap API key from https://openweathermap.org
+#      (newly created keys take up to 2 hours to activate).
+#   3. Copy this file to `local.properties` and replace the empty values below.
+#   4. In Android Studio: File -> Sync Project with Gradle Files, then Run.
+#
+# Note: Android Studio may have already created a `local.properties` for you
+# with `sdk.dir=...`. If so, just append the two API key lines below to it.
+
+sdk.dir=
+MAPS_API_KEY=
+OPENWEATHER_API_KEY=

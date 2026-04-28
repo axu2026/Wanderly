@@ -20,6 +20,23 @@ Stretch goals that are descoped include:
 - User accounts
 - Social media aspect
 
+# Setup
+
+Wanderly needs two API keys to run with full functionality:
+
+- **Google Maps key** — with **Maps SDK for Android**, **Places API (New)**, and the legacy **Places API** all enabled in the Cloud project. Same key for all three.
+- **OpenWeatherMap key** — newly created keys take up to 2 hours to activate.
+
+Both are read from `local.properties` at the project root. That file is gitignored, so each developer keeps their own keys locally.
+
+To set up:
+
+1. Copy `local.properties.example` to `local.properties` (or, if Android Studio already generated `local.properties` with the SDK path, just append the two API key lines from the example).
+2. Paste your keys into the empty values.
+3. **File → Sync Project with Gradle Files**, then **Run**.
+
+If a key is missing, the app degrades gracefully — the Map tab won't render, weather will show "Unavailable", and the itinerary will fall back to a curated NYC pool with a banner.
+
 # Architecture
 
 Wanderly is set up with MVVM architecture, where UI composables retrieve state from ViewModels to update automatically via FlowStates. ViewModels separate logic and state from UI and handle communication to data stores via a Repository, which abstracts how data is retrieved. Repositories either get this by an external API call from a Retrofit instance or from local storage via a Room when values are within the cache.
