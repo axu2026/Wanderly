@@ -59,6 +59,13 @@ class ItineraryViewModel : ViewModel() {
         it.copy(customPlaces = it.customPlaces - place)
     }
 
+    fun loadSavedItinerary(setup: TripSetupState, days: List<ItineraryDay>) {
+        _isGenerating.value = false
+        _usedFallback.value = false
+        _uiState.value = setup
+        _itinerary.value = days
+    }
+
     fun generateItinerary(context: Context) {
         if (_isGenerating.value) return
         val state = _uiState.value
