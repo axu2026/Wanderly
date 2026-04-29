@@ -64,6 +64,7 @@ fun WanderlyApp(
     val itineraryViewModel: ItineraryViewModel = viewModel()
     val placesViewModel: PlacesViewModel = viewModel()
     val informationViewModel: InformationViewModel = viewModel()
+    val savedTripsViewModel: SavedTripsViewModel = viewModel()
 
     // mutable state for navigation
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
@@ -144,6 +145,7 @@ fun WanderlyApp(
                         com.example.wanderly.ui.itinerary.ItineraryScreen(
                             viewModel = itineraryViewModel,
                             weatherViewModel = weatherViewModel,
+                            savedTripsViewModel = savedTripsViewModel,
                             onBack = { showItineraryDetails = false },
                             onPlaceClick = { place ->
                                 focusedPlace = place
@@ -165,7 +167,19 @@ fun WanderlyApp(
                         )
                     }
                 }
-                AppDestinations.PROFILE -> Profile(homeViewModel.address)
+                AppDestinations.PROFILE -> Profile(
+                    address = homeViewModel.address,
+                    savedTripsViewModel = savedTripsViewModel,
+                    onLoadTrip = { tripId ->
+                        savedTripsViewModel.load(tripId) { saved ->
+                            if (saved != null) {
+                                itineraryViewModel.loadSavedItinerary(saved.setup, saved.days)
+                                showItineraryDetails = true
+                                currentDestination = AppDestinations.ITINERARY
+                            }
+                        }
+                    },
+                )
                 AppDestinations.MAP -> Map(
                     userCoordinates = userCoordinates,
                     targetLocation = targetLocation,
