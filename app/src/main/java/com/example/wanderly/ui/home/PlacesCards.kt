@@ -46,7 +46,7 @@ fun PlacesCards(
     places: List<PlaceResult>,
     userLocation: LatLng,
     isLoading: Boolean = false,
-    onPlaceClick: (LatLng) -> Unit = {}
+    onPlaceClick: (PlaceResult) -> Unit = {}
 ) {
     val sortedWithDistance = remember(places, userLocation) {
         places.map { place ->
@@ -96,7 +96,7 @@ fun PlacesCards(
                         place = item.place, 
                         distance = item.distance,
                         onClick = {
-                            onPlaceClick(LatLng(item.place.geometry.location.lat, item.place.geometry.location.lng))
+                            onPlaceClick(item.place)
                         }
                     )
                 }

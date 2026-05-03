@@ -34,7 +34,7 @@ fun InfoCards(
 ) {
     if (isLoading && information.isEmpty()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center
         ) {
             Loading()

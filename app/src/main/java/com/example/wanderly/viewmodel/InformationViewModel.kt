@@ -34,6 +34,12 @@ class InformationViewModel(application: Application) : AndroidViewModel(applicat
     private val _importantPlacesInfoIsLoading = MutableStateFlow(false)
     val importantPlacesInfoIsLoading: StateFlow<Boolean> = _importantPlacesInfoIsLoading
 
+    // selected place information
+    private val _selectedPlaceInfo = MutableStateFlow<WikiSummary?>(null)
+    val selectedPlaceInfo: StateFlow<WikiSummary?> = _selectedPlaceInfo
+    private val _selectedPlaceInfoIsLoading = MutableStateFlow(false)
+    val selectedPlaceInfoIsLoading: StateFlow<Boolean> = _selectedPlaceInfoIsLoading
+
     // fetch information for user's location
     fun fetchLocationInformation(address: Address) {
         viewModelScope.launch {
@@ -113,6 +119,25 @@ class InformationViewModel(application: Application) : AndroidViewModel(applicat
                 Log.e("InformationViewModel", "Error fetching places info", e)
             } finally {
                 _importantPlacesInfoIsLoading.value = false
+            }
+        }
+    }
+
+    // fetch information for a specific place
+    fun fetchPlaceInformation(place: PlaceResult) {
+        viewModelScope.launch {
+            _selectedPlaceInfo.value = null
+            _selectedPlaceInfoIsLoading.value = true
+            try {
+                val result = repository.getNearbySummary(
+                    place.geometry.location.lat,
+                    place.geometry.location.lng
+                )
+                _selectedPlaceInfo.value = result
+            } catch (e: Exception) {
+                Log.e("InformationViewModel", "Error fetching place info", e)
+            } finally {
+                _selectedPlaceInfoIsLoading.value = false
             }
         }
     }
