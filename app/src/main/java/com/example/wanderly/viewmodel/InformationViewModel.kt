@@ -9,28 +9,35 @@ import com.example.wanderly.api.PlaceResult
 import com.example.wanderly.api.WikiRetrofitInstance
 import com.example.wanderly.api.WikiSummary
 import com.example.wanderly.repository.InformationRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+// information view model
 class InformationViewModel(application: Application) : AndroidViewModel(application) {
+    // information repository
     private val repository = InformationRepository(WikiRetrofitInstance.restApi, WikiRetrofitInstance.geoApi)
 
-    private val _information = MutableStateFlow<WikiSummary?>(null)
-    val information: StateFlow<WikiSummary?> = _information
+    // stateflow values
+    // location information
+    private val _locationInfo = MutableStateFlow<WikiSummary?>(null)
+    val locationInfo: StateFlow<WikiSummary?> = _locationInfo
+    private val _locationInfoIsLoading = MutableStateFlow(false)
+    val locationInfoIsLoading: StateFlow<Boolean> = _locationInfoIsLoading
 
-    private val _informationIsLoading = MutableStateFlow(false)
-    val informationIsLoading: StateFlow<Boolean> = _informationIsLoading
+    // important places information
+    private val _importantPlacesInfo = MutableStateFlow<List<WikiSummary?>>(emptyList())
+    val importantPlacesInfo: StateFlow<List<WikiSummary?>> = _importantPlacesInfo
+    private val _importantPlacesInfoIsLoading = MutableStateFlow(false)
+    val importantPlacesInfoIsLoading: StateFlow<Boolean> = _importantPlacesInfoIsLoading
 
-    private val _closestInformation = MutableStateFlow<WikiSummary?>(null)
-    val closestInformation: StateFlow<WikiSummary?> = _closestInformation
-
-    private val _closestIsLoading = MutableStateFlow(false)
-    val closestIsLoading: StateFlow<Boolean> = _closestIsLoading
-
-    fun fetchInformation(address: Address) {
+    // fetch information for user's location
+    fun fetchLocationInformation(address: Address) {
         viewModelScope.launch {
-            _informationIsLoading.value = true
+            _locationInfoIsLoading.value = true
             
             // Create a list of potential Wikipedia page titles from the address
             val candidates = mutableListOf<String>()
@@ -59,7 +66,7 @@ class InformationViewModel(application: Application) : AndroidViewModel(applicat
             for (title in candidates) {
                 try {
                     val result = repository.getSummary(title)
-                    _information.value = result
+                    _locationInfo.value = result
                     success = true
                     break
                 } catch (e: Exception) {
@@ -68,30 +75,44 @@ class InformationViewModel(application: Application) : AndroidViewModel(applicat
             }
             
             if (!success) {
-                _information.value = null
+                _locationInfo.value = null
             }
             
-            _informationIsLoading.value = false
+            _locationInfoIsLoading.value = false
         }
     }
 
-    fun fetchClosestInformation(spot: PlaceResult?) {
+    // fetch information for all important places
+    fun fetchImportantPlacesInformation(places: List<PlaceResult>) {
         viewModelScope.launch {
-            if (spot == null) {
-                _closestInformation.value = null
+            if (places.isEmpty()) {
+                _importantPlacesInfo.value = emptyList()
                 return@launch
             }
 
-            _closestIsLoading.value = true
+            _importantPlacesInfoIsLoading.value = true
 
             try {
-                Log.d("InformationViewModel", "Trying Wikipedia title: ${spot.name}")
-                val result = repository.getNearbySummary(spot.geometry.location.lat, spot.geometry.location.lng)
-                _closestInformation.value = result
+                // Fetch summaries in parallel for better performance
+                coroutineScope {
+                    val summaries = places.map { place ->
+                        async {
+                            try {
+                                repository.getNearbySummary(
+                                    place.geometry.location.lat,
+                                    place.geometry.location.lng
+                                )
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+                    }.awaitAll()
+                    _importantPlacesInfo.value = summaries
+                }
             } catch (e: Exception) {
-                Log.d("InformationViewModel", "Not found: ${spot.name}")
+                Log.e("InformationViewModel", "Error fetching places info", e)
             } finally {
-                _closestIsLoading.value = false
+                _importantPlacesInfoIsLoading.value = false
             }
         }
     }

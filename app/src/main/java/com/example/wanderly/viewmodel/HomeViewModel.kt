@@ -18,8 +18,10 @@ import kotlinx.coroutines.withContext
 
 // view model for home screen
 class HomeViewModel: ViewModel() {
+    // home repository
     private val repository = HomeRepository(PlacesRetrofitInstance.api)
-    
+
+    // mutable states
     var address by mutableStateOf<Address?>(null)
     var isLoading by mutableStateOf(false)
     var backgroundImageUrl by mutableStateOf<String?>(null)

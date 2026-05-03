@@ -65,10 +65,8 @@ fun PlacesCards(
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
-        Text(
+        AdaptiveTitle(
             text = title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
 

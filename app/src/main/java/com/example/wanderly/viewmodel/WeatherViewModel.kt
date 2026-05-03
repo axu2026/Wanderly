@@ -16,14 +16,17 @@ class WeatherViewModel : ViewModel() {
     // repository for weather
     private val repository = WeatherRepository(WeatherRetrofitInstance.api)
 
+    // stateflow values
     private val _weather = MutableStateFlow<WeatherResponse?>(null)
     val weather: StateFlow<WeatherResponse?> = _weather
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    // limiting fetch amount by time
     private var lastFetchTime = 0L
     private var lastFetchLocation: LatLng? = null
 
+    // fetch the weather data from WeatherRepository
     fun fetchWeather(coordinates: LatLng) {
         val currentTime = System.currentTimeMillis()
         val distance = lastFetchLocation?.let { last ->

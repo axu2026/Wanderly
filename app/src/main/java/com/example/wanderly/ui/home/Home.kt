@@ -58,30 +58,36 @@ fun Home(
     val context = LocalContext.current
     val address = viewModel.address
     val scrollState = rememberScrollState()
+
+    // places state
     val searchQuery by placesViewModel.searchQuery.collectAsState()
-    val importantSpots by placesViewModel.importantSpots.collectAsState()
+    val searchedPlaces by placesViewModel.searchedPlaces.collectAsState()
+    val searchIsLoading by placesViewModel.searchIsLoading.collectAsState()
+    val importantPlaces by placesViewModel.importantPlaces.collectAsState()
+    val importantIsLoading by placesViewModel.importantIsLoading.collectAsState()
+
     val focusManager = LocalFocusManager.current
     val backgroundImageUrl = viewModel.backgroundImageUrl
-    val closestImportantSpot by placesViewModel.closestImportantSpot.collectAsState()
 
     // fetch data when coordinates change
     LaunchedEffect(coordinates) {
         viewModel.geocodeAddressIfNeeded(context, coordinates)
         weatherViewModel.fetchWeather(coordinates)
-        placesViewModel.fetchPlaces(coordinates)
-        placesViewModel.fetchImportantSpots(coordinates)
+        placesViewModel.fetchSearchedPlaces(coordinates)
+        placesViewModel.fetchImportantPlaces(coordinates)
     }
 
     // fetch information only when address is available
     LaunchedEffect(address) {
         if (address != null) {
-            informationViewModel.fetchInformation(address)
+            informationViewModel.fetchLocationInformation(address)
         }
     }
 
-    LaunchedEffect(closestImportantSpot) {
-        if (closestImportantSpot != null && address != null) {
-            informationViewModel.fetchClosestInformation(closestImportantSpot)
+    // fetch information for important places
+    LaunchedEffect(importantPlaces) {
+        if (importantPlaces.isNotEmpty()) {
+            informationViewModel.fetchImportantPlacesInformation(importantPlaces)
         }
     }
 
@@ -164,25 +170,35 @@ fun Home(
             
             WeatherCard(weatherViewModel)
 
-            val information by informationViewModel.information.collectAsState()
-            val informationLoading by informationViewModel.informationIsLoading.collectAsState()
-            InfoCard(information, informationLoading)
+            val info by informationViewModel.locationInfo.collectAsState()
+            val infoIsLoading by informationViewModel.locationInfoIsLoading.collectAsState()
+            InfoCard(loading = infoIsLoading, information = info)
             
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (closestImportantSpot != null) {
-                val closestInfo by informationViewModel.closestInformation.collectAsState()
-                val closestLoading by informationViewModel.closestIsLoading.collectAsState()
-                InfoCard(closestInfo, closestLoading)
+            val importantPlacesInfo by informationViewModel.importantPlacesInfo.collectAsState()
+            val importantPlacesInfoIsLoading by informationViewModel.importantPlacesInfoIsLoading.collectAsState()
+
+            if (importantPlacesInfo.isNotEmpty() || importantPlacesInfoIsLoading) {
+                AdaptiveTitle(
+                    text = "Nearby Stories",
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp)
+                )
+                InfoCards(
+                    information = importantPlacesInfo.filterNotNull(),
+                    isLoading = importantPlacesInfoIsLoading
+                )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             val isImportantLoading by placesViewModel.importantIsLoading.collectAsState()
 
             // Featured/Important Spots Section
-            if (importantSpots.isNotEmpty()) {
+            if (importantPlaces.isNotEmpty()) {
                 PlacesCards(
                     title = "Featured Spots",
-                    places = importantSpots,
+                    places = importantPlaces,
                     isLoading = isImportantLoading,
                     userLocation = coordinates,
                     onPlaceClick = onPlaceClick
@@ -214,7 +230,7 @@ fun Home(
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(
                         onSearch = {
-                            placesViewModel.fetchPlaces(coordinates)
+                            placesViewModel.fetchSearchedPlaces(coordinates)
                             focusManager.clearFocus()
                         }
                     ),
@@ -228,13 +244,10 @@ fun Home(
                 )
             }
             
-            val searchPlaces by placesViewModel.places.collectAsState()
-            val isPlacesLoading by placesViewModel.placesIsLoading.collectAsState()
-            
             PlacesCards(
                 title = "Search Results",
-                places = searchPlaces,
-                isLoading = isPlacesLoading,
+                places = searchedPlaces,
+                isLoading = searchIsLoading,
                 userLocation = coordinates,
                 onPlaceClick = onPlaceClick
             )

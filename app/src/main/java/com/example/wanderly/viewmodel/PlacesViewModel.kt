@@ -14,53 +14,53 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class PlacesViewModel(application: Application) : AndroidViewModel(application) {
+    // database and repository for place
     private val database = DatabaseProvider.getDatabase(application)
-    private val repository = PlacesRepository(
-        PlacesRetrofitInstance.api,
-        database.placesDao()
-    )
+    private val repository = PlacesRepository(PlacesRetrofitInstance.api, database.placesDao())
 
-    private val _places = MutableStateFlow<List<PlaceResult>>(emptyList())
-    val places: StateFlow<List<PlaceResult>> = _places
-    
-    private val _placesIsLoading = MutableStateFlow(false)
-    val placesIsLoading: StateFlow<Boolean> = _placesIsLoading
-
-    private val _importantSpots = MutableStateFlow<List<PlaceResult>>(emptyList())
-    val importantSpots: StateFlow<List<PlaceResult>> = _importantSpots
-
-    private val _importantIsLoading = MutableStateFlow(false)
-    val importantIsLoading: StateFlow<Boolean> = _importantIsLoading
-
-    private val _closestImportantSpot = MutableStateFlow<PlaceResult?>(null)
-    val closestImportantSpot: StateFlow<PlaceResult?> = _closestImportantSpot
-
+    // stateflow values
+    // search query
     private val _searchQuery = MutableStateFlow("restaurant")
     val searchQuery: StateFlow<String> = _searchQuery
 
+    // search places
+    private val _searchedPlaces = MutableStateFlow<List<PlaceResult>>(emptyList())
+    val searchedPlaces: StateFlow<List<PlaceResult>> = _searchedPlaces
+    private val _searchIsLoading = MutableStateFlow(false)
+    val searchIsLoading: StateFlow<Boolean> = _searchIsLoading
+
+    // important places
+    private val _importantPlaces = MutableStateFlow<List<PlaceResult>>(emptyList())
+    val importantPlaces: StateFlow<List<PlaceResult>> = _importantPlaces
+    private val _importantIsLoading = MutableStateFlow(false)
+    val importantIsLoading: StateFlow<Boolean> = _importantIsLoading
+
+    // update search query state
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
     }
 
-    fun fetchPlaces(coordinates: LatLng, query: String = _searchQuery.value) {
+    // fetches searched places from PlacesRepository
+    fun fetchSearchedPlaces(coordinates: LatLng, query: String = _searchQuery.value) {
         viewModelScope.launch {
-            _placesIsLoading.value = true
+            _searchIsLoading.value = true
             try {
                 val result = repository.getNearbyPlaces(
                     coordinates.latitude,
                     coordinates.longitude,
                     query
                 )
-                _places.value = result
+                _searchedPlaces.value = result
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                _placesIsLoading.value = false
+                _searchIsLoading.value = false
             }
         }
     }
 
-    fun fetchImportantSpots(coordinates: LatLng) {
+    // fetches important places from PlacesRepository
+    fun fetchImportantPlaces(coordinates: LatLng) {
         viewModelScope.launch {
             _importantIsLoading.value = true
             try {
@@ -68,22 +68,7 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
                     coordinates.latitude,
                     coordinates.longitude
                 )
-                _importantSpots.value = result
-                
-                // Find the closest spot to display detailed info
-                if (result.isNotEmpty()) {
-                    _closestImportantSpot.value = result.minByOrNull { spot ->
-                        val distanceResults = FloatArray(1)
-                        Location.distanceBetween(
-                            coordinates.latitude, coordinates.longitude,
-                            spot.geometry.location.lat, spot.geometry.location.lng,
-                            distanceResults
-                        )
-                        distanceResults[0]
-                    }
-                } else {
-                    _closestImportantSpot.value = null
-                }
+                _importantPlaces.value = result
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {

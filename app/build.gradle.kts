@@ -50,6 +50,7 @@ secrets {
 }
 
 dependencies {
+    implementation(libs.androidx.compose.foundation)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
