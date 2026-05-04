@@ -17,14 +17,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.wanderly.data.model.ItineraryDay
 import com.example.wanderly.data.model.Place
+import com.example.wanderly.viewmodel.MapViewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -34,6 +38,7 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 
@@ -44,8 +49,10 @@ fun Map(
     focusedPlace: Place? = null,
     focusedDay: ItineraryDay? = null,
     transportMode: String = "Walking",
+    viewModel: MapViewModel = viewModel(),
 ) {
     val context = LocalContext.current
+    val routePoints by viewModel.routePoints.collectAsStateWithLifecycle()
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.Builder()
             .target(targetLocation ?: userCoordinates)
@@ -53,11 +60,29 @@ fun Map(
             .build()
     }
 
-    // Animate to target location (Home recommendation tap)
+    // Animate to target location and fit bounds (Home recommendation tap)
     LaunchedEffect(targetLocation) {
-        targetLocation?.let {
+        if (targetLocation != null) {
+            viewModel.fetchRoute(userCoordinates, targetLocation, transportMode.lowercase())
+            val builder = LatLngBounds.builder()
+                .include(userCoordinates)
+                .include(targetLocation)
             cameraPositionState.animate(
-                update = CameraUpdateFactory.newLatLngZoom(it, 16f),
+                update = CameraUpdateFactory.newLatLngBounds(builder.build(), 200),
+                durationMs = 1000,
+            )
+        } else {
+            viewModel.clearRoute()
+        }
+    }
+
+    // Refine camera to fit the actual route points once loaded
+    LaunchedEffect(routePoints) {
+        if (routePoints.isNotEmpty()) {
+            val builder = LatLngBounds.builder()
+            routePoints.forEach { builder.include(it) }
+            cameraPositionState.animate(
+                update = CameraUpdateFactory.newLatLngBounds(builder.build(), 200),
                 durationMs = 1000,
             )
         }
@@ -65,6 +90,7 @@ fun Map(
 
     // Fit camera to a whole day's stops (Itinerary day-header tap)
     LaunchedEffect(focusedDay?.dayNumber, focusedDay?.items?.size) {
+        if (focusedDay != null) viewModel.clearRoute()
         val stops = focusedDay?.items.orEmpty()
         if (stops.isNotEmpty()) {
             if (stops.size == 1) {
@@ -85,6 +111,7 @@ fun Map(
     // Zoom to a single focused place (Itinerary card tap)
     LaunchedEffect(focusedPlace?.name, focusedPlace?.latitude, focusedPlace?.longitude) {
         if (focusedDay == null) {
+            if (focusedPlace != null) viewModel.clearRoute()
             focusedPlace?.let {
                 cameraPositionState.animate(
                     CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 15f)
@@ -98,6 +125,13 @@ fun Map(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
         ) {
+            if (routePoints.isNotEmpty()) {
+                Polyline(
+                    points = routePoints,
+                    color = MaterialTheme.colorScheme.primary,
+                    width = 12f
+                )
+            }
             // User location marker — always shown (stylized)
             val userMarkerState = rememberMarkerState(key = "user", position = userCoordinates)
             MarkerComposable(state = userMarkerState, title = "You") {

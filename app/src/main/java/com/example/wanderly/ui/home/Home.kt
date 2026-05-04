@@ -233,9 +233,9 @@ fun Home(
                     }
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             ElevatedCard(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -248,12 +248,12 @@ fun Home(
                     onValueChange = { placesViewModel.updateSearchQuery(it) },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Search for places (e.g. cafe, park)") },
-                    leadingIcon = { 
+                    leadingIcon = {
                         Icon(
-                            Icons.Default.Search, 
+                            Icons.Default.Search,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary 
-                        ) 
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                     },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
