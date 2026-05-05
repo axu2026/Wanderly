@@ -15,14 +15,19 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.automirrored.outlined.DirectionsWalk
 import androidx.compose.material.icons.outlined.DirectionsBus
 import androidx.compose.material.icons.outlined.DirectionsCar
+import androidx.compose.material.icons.outlined.FamilyRestroom
 import androidx.compose.material.icons.outlined.Forest
+import androidx.compose.material.icons.outlined.Hiking
+import androidx.compose.material.icons.outlined.HistoryEdu
 import androidx.compose.material.icons.outlined.Interests
 import androidx.compose.material.icons.outlined.LocalBar
+import androidx.compose.material.icons.outlined.LocalCafe
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Museum
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.ShoppingBag
+import androidx.compose.material.icons.outlined.Spa
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -216,9 +221,14 @@ fun TripSetupScreen(
                 val interests = listOf(
                     "Food" to Icons.Outlined.Restaurant,
                     "Culture" to Icons.Outlined.Museum,
+                    "History" to Icons.Outlined.HistoryEdu,
                     "Nightlife" to Icons.Outlined.LocalBar,
                     "Nature" to Icons.Outlined.Forest,
+                    "Adventure" to Icons.Outlined.Hiking,
                     "Shopping" to Icons.Outlined.ShoppingBag,
+                    "Wellness" to Icons.Outlined.Spa,
+                    "Family" to Icons.Outlined.FamilyRestroom,
+                    "Coffee" to Icons.Outlined.LocalCafe,
                 )
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),

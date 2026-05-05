@@ -68,9 +68,14 @@ object PlacesRepository {
             interests.mapNotNull { interest ->
                 when (interest) {
                     "Culture" -> "Culture" to listOf("museum", "art_gallery")
-                    "Nature" -> "Nature" to listOf("park")
+                    "History" -> "History" to listOf("historical_landmark", "monument", "history_museum")
+                    "Nature" -> "Nature" to listOf("park", "national_park", "garden")
+                    "Adventure" -> "Adventure" to listOf("amusement_park", "hiking_area", "tourist_attraction")
                     "Shopping" -> "Shopping" to listOf("shopping_mall")
                     "Nightlife" -> "Nightlife" to listOf("bar", "night_club")
+                    "Wellness" -> "Wellness" to listOf("spa", "yoga_studio", "wellness_center")
+                    "Family" -> "Family" to listOf("zoo", "aquarium", "amusement_park")
+                    "Coffee" -> "Coffee" to listOf("cafe", "coffee_shop", "bakery")
                     "Food" -> "Food" to listOf("tourist_attraction") // Food covered by meals
                     else -> null
                 }
@@ -80,9 +85,14 @@ object PlacesRepository {
         for ((category, types) in activityQueries) {
             val duration = when (category) {
                 "Culture" -> 150
+                "History" -> 120
                 "Nature" -> 90
+                "Adventure" -> 180
                 "Shopping" -> 90
                 "Nightlife" -> 90
+                "Wellness" -> 90
+                "Family" -> 180
+                "Coffee" -> 30
                 else -> 90
             }
             addUnique(
@@ -141,7 +151,12 @@ object PlacesRepository {
             "Nature" -> 0.0
             "Shopping" -> 0.0
             "Culture" -> 25.0
+            "History" -> 20.0
+            "Adventure" -> 50.0
             "Nightlife" -> 35.0
+            "Wellness" -> 60.0
+            "Family" -> 30.0
+            "Coffee" -> 8.0
             "Food" -> 25.0
             else -> 0.0
         }
