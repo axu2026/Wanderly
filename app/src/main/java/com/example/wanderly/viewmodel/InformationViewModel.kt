@@ -43,6 +43,7 @@ class InformationViewModel(application: Application) : AndroidViewModel(applicat
     // fetch information for user's location
     fun fetchLocationInformation(address: Address) {
         viewModelScope.launch {
+            _locationInfo.value = null
             _locationInfoIsLoading.value = true
             
             // Create a list of potential Wikipedia page titles from the address
@@ -91,8 +92,8 @@ class InformationViewModel(application: Application) : AndroidViewModel(applicat
     // fetch information for all important places
     fun fetchImportantPlacesInformation(places: List<PlaceResult>) {
         viewModelScope.launch {
+            _importantPlacesInfo.value = emptyList()
             if (places.isEmpty()) {
-                _importantPlacesInfo.value = emptyList()
                 return@launch
             }
 

@@ -40,6 +40,7 @@ fun PlaceDetailSheet(
     onViewOnMap: (PlaceResult) -> Unit,
     onShowRoute: (PlaceResult) -> Unit
 ) {
+    // get the image banner for the modal
     val photoReference = place.photos?.firstOrNull()?.photo_reference
     val imageUrl = when {
         photoReference != null -> "https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=$photoReference&key=${BuildConfig.MAPS_API_KEY}"
@@ -48,6 +49,7 @@ fun PlaceDetailSheet(
     }
 
     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+        // don't try to render image if we have nothing from the imageUrl
         if (!imageUrl.isNullOrBlank()) {
             AsyncImage(
                 model = imageUrl,
@@ -98,6 +100,7 @@ fun PlaceDetailSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // load in info if applicable
             if (isLoading) {
                 Text(
                     text = "Loading stories...",
@@ -121,6 +124,7 @@ fun PlaceDetailSheet(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
+            // the categories for the place
             if (place.types.isNotEmpty()) {
                 val typesText = place.types.take(3).joinToString(", ") { type ->
                     type.replace("_", " ").replaceFirstChar { it.uppercase() }

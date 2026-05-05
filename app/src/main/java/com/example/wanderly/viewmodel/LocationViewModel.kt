@@ -19,30 +19,30 @@ import kotlinx.coroutines.flow.StateFlow
 
 // view model for location
 class LocationViewModel(application: Application) : AndroidViewModel(application) {
+    // data class to keep track of user location
     data class LocationState(
         val latitude: Double? = null,
         val longitude: Double? = null
     )
 
+    // stateflow for the users location to the rest of the app
     private val _state = MutableStateFlow(LocationState())
     val state: StateFlow<LocationState> = _state
 
+    // location provider client variables
     private var lastEmittedLocation: Location? = null
-
-    private val minDistanceMeters = 5f 
-
+    private val minDistanceMeters = 5f
     private var fusedLocationClient = LocationServices.getFusedLocationProviderClient(application)
-    
     private var locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000L)
         .setMinUpdateIntervalMillis(2000L)
         .setWaitForAccurateLocation(false)
         .build()
-        
     private var locationCallback: LocationCallback? = null
 
+    // begin getting users location
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     fun startLocationUpdates() {
-        if (!hasLocationPermission()) return
+        if (!hasLocationPermission()) return // no permission to get location
 
         try {
             fusedLocationClient.lastLocation.addOnSuccessListener { loc ->
@@ -69,6 +69,7 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    // get the user's location if it updates/moves
     private fun updateState(loc: Location) {
         val previous = lastEmittedLocation
         
@@ -80,6 +81,7 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
         _state.value = LocationState(loc.latitude, loc.longitude)
     }
 
+    // stop requesting location if we don't need to
     fun stopLocationUpdates() {
         locationCallback?.let { fusedLocationClient.removeLocationUpdates(it) }
         locationCallback = null

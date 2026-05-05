@@ -38,7 +38,7 @@ import com.example.wanderly.ui.profile.*
 import com.example.wanderly.viewmodel.*
 import com.google.android.gms.maps.model.LatLng
 
-
+// main activity
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,7 +59,7 @@ fun WanderlyApp(
     // location viewModel
     val state by viewModel.state.collectAsState()
 
-    // create all the view models necessary for state
+    // create all the view models necessary for state on other screens
     val homeViewModel: HomeViewModel = viewModel()
     val weatherViewModel: WeatherViewModel = viewModel()
     val itineraryViewModel: ItineraryViewModel = viewModel()

@@ -1,20 +1,22 @@
 package com.example.wanderly.repository
 
 import android.util.Log
-import com.example.wanderly.api.SummaryResponse
 import com.example.wanderly.api.WikiApi
 import com.example.wanderly.api.WikiSummary
 import com.example.wanderly.api.GeoWikiApi
 
+// repository for information API
 class InformationRepository(
     private val wikiApi: WikiApi,
     private val geoWikiApi: GeoWikiApi
 ) {
+    // get a summary via named title (this is for city info)
     suspend fun getSummary(title: String): WikiSummary {
         val safeTitle = title.replace(" ", "_")
         return wikiApi.getSummary(safeTitle)
     }
 
+    // get a summary via coordinates (local sites info)
     suspend fun getNearbySummary(lat: Double, lon: Double): WikiSummary? {
         val coords = "$lat|$lon"
         val geoResult = geoWikiApi.geoSearch(coords)

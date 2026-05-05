@@ -3,6 +3,7 @@ package com.example.wanderly.repository
 import com.example.wanderly.BuildConfig
 import com.example.wanderly.api.PlacesApi
 
+// home repository to get background image from Places API
 class HomeRepository(private val api: PlacesApi) {
     suspend fun getCityImageUrl(cityName: String): String? {
         return try {

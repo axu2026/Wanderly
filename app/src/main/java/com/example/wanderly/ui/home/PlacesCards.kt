@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,6 +41,7 @@ private data class PlaceWithDistance(
     val distance: Float
 )
 
+// a lazy row of place cards the user can tap on
 @Composable
 fun PlacesCards(
     title: String,
@@ -50,6 +50,7 @@ fun PlacesCards(
     isLoading: Boolean = false,
     onPlaceClick: (PlaceResult) -> Unit = {}
 ) {
+    // create a list of locations that are sorted by distance from user
     val sortedWithDistance = remember(places, userLocation) {
         places.map { place ->
             val results = FloatArray(1)
@@ -88,6 +89,7 @@ fun PlacesCards(
         } else {
             val listState = rememberLazyListState()
 
+            // render each place card on a lazy row
             LazyRow(
                 state = listState,
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -106,17 +108,20 @@ fun PlacesCards(
     }
 }
 
+// the card that represents a place
 @Composable
 fun PlaceCard(
     place: PlaceResult, 
     distance: Float,
     onClick: () -> Unit
 ) {
+    // get the image for the card background
     val photoReference = place.photos?.firstOrNull()?.photo_reference
     val imageUrl = if (photoReference != null) {
         "https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=$photoReference&key=${BuildConfig.MAPS_API_KEY}"
     } else null
 
+    // get the distance to display it to user
     val distanceText = if (distance < 1000) {
         "${distance.toInt()}m"
     } else {

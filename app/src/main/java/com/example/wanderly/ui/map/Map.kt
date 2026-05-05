@@ -76,7 +76,6 @@ import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerComposable
-import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
@@ -117,7 +116,6 @@ fun Map(
     var isCarouselVisible by remember { mutableStateOf(true) }
     var internalSearchedDestination by remember { mutableStateOf<LatLng?>(null) }
     val effectiveSearchedDestination = searchedDestination ?: internalSearchedDestination
-    
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val uiSettings by remember { mutableStateOf(
         MapUiSettings(
@@ -134,6 +132,7 @@ fun Map(
             else -> "walking"
         }
 
+        // decide how to create the route depending on what we are given
         when {
             focusedDay != null -> {
                 val stops = focusedDay.items.map { LatLng(it.place.latitude, it.place.longitude) }
@@ -215,12 +214,14 @@ fun Map(
         }
     }
 
+    // actual map part of the screen
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
             uiSettings = uiSettings
         ) {
+            // draw the route if we have one
             if (routePoints.isNotEmpty()) {
                 Polyline(
                     points = routePoints,
@@ -467,7 +468,7 @@ fun Map(
             }
         }
 
-
+        // bottom sheet modal for place info/details
         if (showBottomSheet && selectedPlace != null) {
             val wikiSummary by informationViewModel.selectedPlaceInfo.collectAsState()
             val wikiLoading by informationViewModel.selectedPlaceInfoIsLoading.collectAsState()

@@ -49,6 +49,7 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
     // fetches searched places from PlacesRepository
     fun fetchSearchedPlaces(coordinates: LatLng, query: String = _searchQuery.value) {
         viewModelScope.launch {
+            _searchedPlaces.value = emptyList()
             _searchIsLoading.value = true
             try {
                 val result = repository.getNearbyPlaces(
@@ -68,6 +69,7 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
     // fetches important places from PlacesRepository
     fun fetchImportantPlaces(coordinates: LatLng) {
         viewModelScope.launch {
+            _importantPlaces.value = emptyList()
             _importantIsLoading.value = true
             try {
                 val result = repository.getImportantSpots(

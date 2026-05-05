@@ -5,6 +5,7 @@ import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
 
+// define data type for wikipedia response
 data class WikiSummary(
     val title: String,
     val extract: String,
@@ -35,6 +36,7 @@ data class SummaryResponse(
     val type: String? // "standard" or "disambiguation"
 )
 
+// interface defining endpoints to contact wikipedia
 interface WikiApi {
     @GET("api/rest_v1/page/summary/{title}")
     suspend fun getSummary(
@@ -42,6 +44,7 @@ interface WikiApi {
     ): WikiSummary
 }
 
+// separate interface to get geolocation info
 interface GeoWikiApi {
     @GET("w/api.php?action=query&list=geosearch&format=json")
     suspend fun geoSearch(
@@ -51,9 +54,11 @@ interface GeoWikiApi {
     ): GeoSearchResponse
 }
 
+// retrofit instance to make requests
 object WikiRetrofitInstance {
     private const val BASE_URL = "https://en.wikipedia.org/"
 
+    // wikipedia wants to know where requests are coming from, provide a client
     private val client = OkHttpClient.Builder()
         .addInterceptor { chain ->
             val request = chain.request().newBuilder()

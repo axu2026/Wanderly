@@ -5,9 +5,11 @@ import com.example.wanderly.BuildConfig
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.PolyUtil
 
+// repository for directions API
 class DirectionsRepository(
     private val api: DirectionsApi
 ) {
+    // call the API to return a list of LatLng values to draw Polyline
     suspend fun getDirections(
         lat1: Double,
         lon1: Double,

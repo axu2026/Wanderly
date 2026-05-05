@@ -2,7 +2,6 @@ package com.example.wanderly.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.example.wanderly.api.WikiSummary
 import com.example.wanderly.ui.Loading
 
+// lazy row of info cards to show information about nearby places
 @Composable
 fun InfoCards(
     information: List<WikiSummary>,
@@ -64,8 +64,10 @@ fun InfoCards(
 fun InfoCard(
     loading: Boolean,
     modifier: Modifier = Modifier,
-    information: WikiSummary? = null
+    information: WikiSummary? = null,
+    label: String = "Local Info"
 ) {
+    // for read more expansion
     var expanded by remember { mutableStateOf(false) }
 
     Surface(
@@ -99,7 +101,7 @@ fun InfoCard(
                     }
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Local Information",
+                        text = label,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface

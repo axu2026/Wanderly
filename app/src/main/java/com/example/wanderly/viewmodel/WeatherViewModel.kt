@@ -3,7 +3,6 @@ package com.example.wanderly.viewmodel
 import android.location.Location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.wanderly.BuildConfig
 import com.example.wanderly.api.*
 import com.example.wanderly.repository.WeatherRepository
 import com.google.android.gms.maps.model.LatLng

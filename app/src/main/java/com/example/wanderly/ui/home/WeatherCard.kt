@@ -61,17 +61,18 @@ fun WeatherCard(viewModel: WeatherViewModel = viewModel()) {
             
             Spacer(modifier = Modifier.height(12.dp))
 
+            // check if we are still loading data from api
             if (loading) {
                 Loading()
-            } else if (weather != null) {
+            } else if (weather != null) { // render the card once we have data
                 val data = weather!!
                 val weatherInfo = data.weather.firstOrNull()
                 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Column {
                         Text(
                             text = "${data.main.temp.toInt()}°",
@@ -101,7 +102,7 @@ fun WeatherCard(viewModel: WeatherViewModel = viewModel()) {
                         }
                     }
                 }
-            } else {
+            } else { // for some reason if nothing is found
                 Text(
                     text = "Weather data unavailable",
                     style = MaterialTheme.typography.bodyMedium,

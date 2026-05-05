@@ -3,6 +3,7 @@ package com.example.wanderly.local
 import android.content.Context
 import androidx.room.Room
 
+// initializes the database if needed
 object DatabaseProvider {
     @Volatile
     private var INSTANCE: AppDatabase? = null

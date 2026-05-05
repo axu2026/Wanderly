@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+// for home screen section titles, turn white if over background image
 @Composable
 fun AdaptiveTitle(
     text: String,
@@ -49,8 +50,8 @@ fun AdaptiveTitle(
         modifier = modifier.onGloballyPositioned { coords ->
             val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
             val y = coords.positionInWindow().y
-            // If the title is in the top 40% of the screen, use light color + shadow
-            val isTopHalf = y < screenHeight * 0.4f
+            // If the title is in the top 30% of the screen, use light color + shadow
+            val isTopHalf = y < screenHeight * 0.3f
             color = if (isTopHalf) lightColor else darkColor
             useShadow = isTopHalf
         }
