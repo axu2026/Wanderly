@@ -13,12 +13,20 @@ class DirectionsRepository(
         lon1: Double,
         lat2: Double,
         lon2: Double,
-        mode: String = "walking"
+        mode: String = "walking",
+        waypoints: List<LatLng> = emptyList()
     ): List<LatLng> {
+        val waypointsString = if (waypoints.isNotEmpty()) {
+            "optimize:false|" + waypoints.joinToString("|") { "${it.latitude},${it.longitude}" }
+        } else {
+            null
+        }
+
         val response = api.getDirections(
             origin = "$lat1,$lon1",
             destination = "$lat2,$lon2",
             mode = mode,
+            waypoints = waypointsString,
             apiKey = BuildConfig.MAPS_API_KEY
         )
 

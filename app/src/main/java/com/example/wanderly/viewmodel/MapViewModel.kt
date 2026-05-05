@@ -30,6 +30,30 @@ class MapViewModel : ViewModel() {
         }
     }
 
+    fun fetchItineraryRoute(stops: List<LatLng>, mode: String = "walking") {
+        if (stops.size < 2) {
+            _routePoints.value = emptyList()
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val origin = stops.first()
+                val destination = stops.last()
+                val waypoints = if (stops.size > 2) stops.subList(1, stops.size - 1) else emptyList()
+
+                val points = repository.getDirections(
+                    origin.latitude, origin.longitude,
+                    destination.latitude, destination.longitude,
+                    mode,
+                    waypoints
+                )
+                _routePoints.value = points
+            } catch (e: Exception) {
+                _routePoints.value = emptyList()
+            }
+        }
+    }
+
     fun clearRoute() {
         _routePoints.value = emptyList()
     }

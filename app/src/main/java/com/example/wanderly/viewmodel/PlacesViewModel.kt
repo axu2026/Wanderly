@@ -1,7 +1,6 @@
 package com.example.wanderly.viewmodel
 
 import android.app.Application
-import android.location.Location
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wanderly.api.PlaceResult
@@ -13,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+// view model storing places state
 class PlacesViewModel(application: Application) : AndroidViewModel(application) {
     // database and repository for place
     private val database = DatabaseProvider.getDatabase(application)
@@ -20,7 +20,7 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
 
     // stateflow values
     // search query
-    private val _searchQuery = MutableStateFlow("restaurant")
+    private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 
     // search places
@@ -38,6 +38,12 @@ class PlacesViewModel(application: Application) : AndroidViewModel(application) 
     // update search query state
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
+    }
+
+    // clears search query and results
+    fun clearSearchResults() {
+        _searchQuery.value = ""
+        _searchedPlaces.value = emptyList()
     }
 
     // fetches searched places from PlacesRepository

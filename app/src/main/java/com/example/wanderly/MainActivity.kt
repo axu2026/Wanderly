@@ -186,6 +186,13 @@ fun WanderlyApp(
                     focusedPlace = focusedPlace,
                     focusedDay = focusedDay,
                     transportMode = tripState.transportMode,
+                    placesViewModel = placesViewModel,
+                    informationViewModel = informationViewModel,
+                    onClearFocus = {
+                        targetLocation = null
+                        focusedPlace = null
+                        focusedDay = null
+                    }
                 )
             }
         }

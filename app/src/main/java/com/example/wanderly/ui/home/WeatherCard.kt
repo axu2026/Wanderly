@@ -99,8 +99,7 @@ fun WeatherCard(viewModel: WeatherViewModel = viewModel()) {
             } else {
                 Text(
                     text = "Weather data unavailable",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
         }
