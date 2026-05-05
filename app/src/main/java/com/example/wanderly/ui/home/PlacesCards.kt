@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
@@ -59,17 +61,14 @@ fun PlacesCards(
             PlaceWithDistance(place, results[0])
         }.sortedBy { it.distance }
     }
-
+    AdaptiveTitle(
+        text = title,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp)
+    )
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
     ) {
-        AdaptiveTitle(
-            text = title,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-
         if (isLoading) {
             Box(
                 modifier = Modifier
@@ -87,13 +86,15 @@ fun PlacesCards(
                 style = MaterialTheme.typography.bodyMedium
             )
         } else {
+            val listState = rememberLazyListState()
+
             LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                state = listState,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 items(sortedWithDistance) { item ->
                     PlaceCard(
-                        place = item.place, 
+                        place = item.place,
                         distance = item.distance,
                         onClick = {
                             onPlaceClick(item.place)
@@ -126,11 +127,12 @@ fun PlaceCard(
         onClick = onClick,
         modifier = Modifier
             .width(260.dp)
-            .height(170.dp),
+            .height(200.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp),
-        shape = MaterialTheme.shapes.large
+        shape = RoundedCornerShape(20.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
+            // image background for card
             if (imageUrl != null) {
                 AsyncImage(
                     model = imageUrl,
@@ -146,6 +148,7 @@ fun PlaceCard(
                 )
             }
 
+            // styling gradient
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -157,6 +160,7 @@ fun PlaceCard(
                     )
             )
 
+            // actual location card content
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -167,7 +171,7 @@ fun PlaceCard(
                     text = place.name,
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

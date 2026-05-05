@@ -49,7 +49,7 @@ fun PlaceDetailSheet(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp),
+                    .height(300.dp),
                 contentScale = ContentScale.Crop
             )
         }
@@ -63,7 +63,7 @@ fun PlaceDetailSheet(
             Text(
                 text = place.name,
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.SemiBold
             )
 
             if (place.rating != null) {
@@ -104,7 +104,7 @@ fun PlaceDetailSheet(
                 Text(
                     text = "Did you know?",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(4.dp))

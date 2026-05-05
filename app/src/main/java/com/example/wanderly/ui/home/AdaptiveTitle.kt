@@ -44,7 +44,7 @@ fun AdaptiveTitle(
         style = MaterialTheme.typography.titleLarge.copy(
             shadow = if (useShadow) textShadow else null
         ),
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.SemiBold,
         color = color.takeOrElse { darkColor },
         modifier = modifier.onGloballyPositioned { coords ->
             val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }

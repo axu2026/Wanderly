@@ -1,6 +1,7 @@
 package com.example.wanderly.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -67,6 +68,7 @@ fun Home(
     val importantPlaces by placesViewModel.importantPlaces.collectAsState()
     val importantIsLoading by placesViewModel.importantIsLoading.collectAsState()
 
+    // background
     val backgroundImageUrl = viewModel.backgroundImageUrl
 
     // fetch data when coordinates change
@@ -97,8 +99,8 @@ fun Home(
         blurRadius = 10f
     )
 
-    // Using surfaceContainerLow for better contrast with cards
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerLow)) {
+    // Using surface for better consistency with other screens
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         // 1. Background Image (Top Half only)
         if (backgroundImageUrl != null) {
             AsyncImage(
@@ -110,7 +112,7 @@ fun Home(
             )
         }
 
-        // 2. Refined Gradient Scrim (Fades to surfaceContainerLow by midpoint)
+        // 2. Refined Gradient Scrim (Fades to surface by midpoint)
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -118,8 +120,8 @@ fun Home(
                     Brush.verticalGradient(
                         0.0f to Color.Black.copy(alpha = 0.65f),
                         0.2f to Color.Black.copy(alpha = 0.3f),
-                        0.5f to MaterialTheme.colorScheme.surfaceContainerLow,
-                        1.0f to MaterialTheme.colorScheme.surfaceContainerLow
+                        0.5f to MaterialTheme.colorScheme.surface,
+                        1.0f to MaterialTheme.colorScheme.surface
                     )
                 )
         )
@@ -134,6 +136,7 @@ fun Home(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
+            // display welcome, address, city
             if (address != null) {
                 val bestLocationName = getBestLocationName(address) ?: "Unknown Location"
                 Text(
@@ -149,7 +152,6 @@ fun Home(
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = formatAddress(address),
                     textAlign = TextAlign.Center,
@@ -165,52 +167,55 @@ fun Home(
                 )
             }
 
-            Spacer(modifier = Modifier.height(48.dp))
-            
-            WeatherCard(weatherViewModel)
-
-            val info by informationViewModel.locationInfo.collectAsState()
-            val infoIsLoading by informationViewModel.locationInfoIsLoading.collectAsState()
-            InfoCard(loading = infoIsLoading, information = info)
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            val importantPlacesInfo by informationViewModel.importantPlacesInfo.collectAsState()
-            val importantPlacesInfoIsLoading by informationViewModel.importantPlacesInfoIsLoading.collectAsState()
-
-            if (importantPlacesInfo.isNotEmpty() || importantPlacesInfoIsLoading) {
-                AdaptiveTitle(
-                    text = "Nearby Stories",
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp)
-                )
-                InfoCards(
-                    information = importantPlacesInfo.filterNotNull(),
-                    isLoading = importantPlacesInfoIsLoading
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            val isImportantLoading by placesViewModel.importantIsLoading.collectAsState()
-
-            // Featured/Important Spots Section
-            if (importantPlaces.isNotEmpty()) {
-                PlacesCards(
-                    title = "Featured Spots",
-                    places = importantPlaces,
-                    isLoading = isImportantLoading,
-                    userLocation = coordinates,
-                    onPlaceClick = {
-                        selectedPlace = it
-                        informationViewModel.fetchPlaceInformation(it)
-                        showBottomSheet = true
-                    }
-                )
-            }
-
             Spacer(modifier = Modifier.height(32.dp))
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // weather info
+                WeatherCard(weatherViewModel)
+
+                // general city info
+                val info by informationViewModel.locationInfo.collectAsState()
+                val infoIsLoading by informationViewModel.locationInfoIsLoading.collectAsState()
+                InfoCard(loading = infoIsLoading, information = info)
+
+                // nearby sites info
+                val importantPlacesInfo by informationViewModel.importantPlacesInfo.collectAsState()
+                val importantPlacesInfoIsLoading by informationViewModel.importantPlacesInfoIsLoading.collectAsState()
+                if (importantPlacesInfo.isNotEmpty() || importantPlacesInfoIsLoading) {
+                    AdaptiveTitle(
+                        text = "Nearby Info",
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp)
+                    )
+                    InfoCards(
+                        information = importantPlacesInfo.filterNotNull(),
+                        isLoading = importantPlacesInfoIsLoading
+                    )
+                }
+
+                val isImportantLoading by placesViewModel.importantIsLoading.collectAsState()
+
+                // Featured/Important Spots Section
+                if (importantPlaces.isNotEmpty()) {
+                    PlacesCards(
+                        title = "Featured Spots",
+                        places = importantPlaces,
+                        isLoading = isImportantLoading,
+                        userLocation = coordinates,
+                        onPlaceClick = {
+                            selectedPlace = it
+                            informationViewModel.fetchPlaceInformation(it)
+                            showBottomSheet = true
+                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+            }
         }
 
+        // bottom modal for place details
         if (showBottomSheet && selectedPlace != null) {
             val wikiSummary by informationViewModel.selectedPlaceInfo.collectAsState()
             val wikiLoading by informationViewModel.selectedPlaceInfoIsLoading.collectAsState()
@@ -218,7 +223,7 @@ fun Home(
             ModalBottomSheet(
                 onDismissRequest = { showBottomSheet = false },
                 sheetState = sheetState,
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                containerColor = MaterialTheme.colorScheme.surface
             ) {
                 PlaceDetailSheet(
                     place = selectedPlace!!,
