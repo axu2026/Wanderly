@@ -30,6 +30,7 @@ import com.example.wanderly.data.model.Place
 import com.example.wanderly.api.PlaceResult
 import com.example.wanderly.ui.auth.LoginScreen
 import com.example.wanderly.ui.auth.SignupScreen
+import com.example.wanderly.ui.onboarding.OnboardingScreen
 import com.example.wanderly.ui.theme.WanderlyTheme
 import com.example.wanderly.viewmodel.LocationViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -61,6 +62,9 @@ fun WanderlyApp(
 
     when {
         !authState.sessionRestored -> Loading()
+        !authState.hasSeenOnboarding -> OnboardingScreen(
+            onFinish = { authViewModel.completeOnboarding() }
+        )
         authState.currentUser == null -> AuthFlow(authViewModel)
         else -> MainApp(locationViewModel, authViewModel)
     }
