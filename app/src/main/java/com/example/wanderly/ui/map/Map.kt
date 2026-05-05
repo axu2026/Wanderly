@@ -1,10 +1,16 @@
 package com.example.wanderly.ui.map
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +24,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
@@ -50,6 +58,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.wanderly.api.ApiLocation
+import com.example.wanderly.api.Geometry
 import com.example.wanderly.api.PlaceResult
 import com.example.wanderly.data.model.ItineraryDay
 import com.example.wanderly.data.model.Place
@@ -76,9 +86,10 @@ import com.google.maps.android.compose.MapUiSettings
 @Composable
 fun Map(
     userCoordinates: LatLng,
-    targetLocation: LatLng? = null,
+    targetPlace: PlaceResult? = null,
     focusedPlace: Place? = null,
     focusedDay: ItineraryDay? = null,
+    searchedDestination: LatLng? = null,
     transportMode: String = "Walking",
     viewModel: MapViewModel = viewModel(),
     placesViewModel: PlacesViewModel = viewModel(),
@@ -89,7 +100,7 @@ fun Map(
     val routePoints by viewModel.routePoints.collectAsStateWithLifecycle()
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.Builder()
-            .target(targetLocation ?: userCoordinates)
+            .target(targetPlace?.let { LatLng(it.geometry.location.lat, it.geometry.location.lng) } ?: userCoordinates)
             .zoom(15f)
             .build()
     }
@@ -103,6 +114,10 @@ fun Map(
     // Bottom sheet state
     var selectedPlace by remember { mutableStateOf<PlaceResult?>(null) }
     var showBottomSheet by remember { mutableStateOf(false) }
+    var isCarouselVisible by remember { mutableStateOf(true) }
+    var internalSearchedDestination by remember { mutableStateOf<LatLng?>(null) }
+    val effectiveSearchedDestination = searchedDestination ?: internalSearchedDestination
+    
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val uiSettings by remember { mutableStateOf(
         MapUiSettings(
@@ -112,7 +127,7 @@ fun Map(
     )}
 
     // Unified routing and camera logic
-    LaunchedEffect(targetLocation, focusedPlace, focusedDay, transportMode) {
+    LaunchedEffect(targetPlace, focusedPlace, focusedDay, transportMode, effectiveSearchedDestination, userCoordinates) {
         val mode = when (transportMode) {
             "Car" -> "driving"
             "Transit" -> "transit"
@@ -139,13 +154,20 @@ fun Map(
                     viewModel.clearRoute()
                 }
             }
-            targetLocation != null -> {
-                viewModel.fetchRoute(userCoordinates, targetLocation, mode)
+            effectiveSearchedDestination != null -> {
+                viewModel.fetchRoute(userCoordinates, effectiveSearchedDestination!!, mode)
                 val builder = LatLngBounds.builder()
                     .include(userCoordinates)
-                    .include(targetLocation)
+                    .include(effectiveSearchedDestination!!)
                 cameraPositionState.animate(
                     update = CameraUpdateFactory.newLatLngBounds(builder.build(), 200),
+                    durationMs = 1000,
+                )
+            }
+            targetPlace != null -> {
+                viewModel.clearRoute()
+                cameraPositionState.animate(
+                    update = CameraUpdateFactory.newLatLngZoom(LatLng(targetPlace.geometry.location.lat, targetPlace.geometry.location.lng), 15f),
                     durationMs = 1000,
                 )
             }
@@ -207,7 +229,10 @@ fun Map(
                 )
             }
             // User location marker — always shown (stylized)
-            val userMarkerState = rememberMarkerState(key = "user", position = userCoordinates)
+            val userMarkerState = rememberMarkerState(position = userCoordinates)
+            LaunchedEffect(userCoordinates) {
+                userMarkerState.position = userCoordinates
+            }
             MarkerComposable(state = userMarkerState, title = "You") {
                 UserLocationIcon()
             }
@@ -215,18 +240,33 @@ fun Map(
             // Numbered markers for an entire day's stops
             if (focusedDay != null) {
                 focusedDay.items.forEachIndexed { index, item ->
+                    val placeResult = PlaceResult(
+                        name = item.place.name,
+                        place_id = "",
+                        geometry = Geometry(ApiLocation(item.place.latitude, item.place.longitude)),
+                        rating = item.place.rating,
+                        vicinity = item.place.address,
+                        types = listOf(item.place.category ?: ""),
+                        photos = null
+                    )
                     Marker(
-                        state = MarkerState(position = LatLng(item.place.latitude, item.place.longitude)),
+                        state = rememberMarkerState(position = LatLng(item.place.latitude, item.place.longitude)),
                         title = "${index + 1}. ${item.place.name}",
                         snippet = item.place.address,
                         icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE),
+                        onClick = {
+                            selectedPlace = placeResult
+                            informationViewModel.fetchPlaceInformation(placeResult)
+                            showBottomSheet = true
+                            false
+                        }
                     )
                 }
             } else {
                 // Search result markers
                 searchedPlaces.forEach { place ->
                     Marker(
-                        state = MarkerState(position = LatLng(place.geometry.location.lat, place.geometry.location.lng)),
+                        state = rememberMarkerState(position = LatLng(place.geometry.location.lat, place.geometry.location.lng)),
                         title = place.name,
                         snippet = place.vicinity,
                         onClick = {
@@ -240,139 +280,193 @@ fun Map(
 
                 // Single focused place from itinerary card
                 focusedPlace?.let {
-                    val placeMarkerState = rememberMarkerState(key = "focused", position = LatLng(it.latitude, it.longitude))
-                    MarkerComposable(state = placeMarkerState) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = null,
-                            tint = Color.Red,
-                            modifier = Modifier.size(40.dp),
-                        )
-                    }
+                    val placeResult = PlaceResult(
+                        name = it.name,
+                        place_id = "",
+                        geometry = Geometry(ApiLocation(it.latitude, it.longitude)),
+                        rating = it.rating,
+                        vicinity = it.address,
+                        types = listOf(it.category ?: ""),
+                        photos = null
+                    )
+                    Marker(
+                        state = rememberMarkerState(key = "focused", position = LatLng(it.latitude, it.longitude)),
+                        title = it.name,
+                        snippet = it.address,
+                        onClick = {
+                            selectedPlace = placeResult
+                            informationViewModel.fetchPlaceInformation(placeResult)
+                            showBottomSheet = true
+                            false
+                        }
+                    )
                 }
                 // Target location from Home recommendations
-                targetLocation?.let {
-                    val targetMarkerState = rememberMarkerState(key = "target", position = it)
-                    MarkerComposable(state = targetMarkerState) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = null,
-                            tint = Color.Red,
-                            modifier = Modifier.size(40.dp),
-                        )
-                    }
+                targetPlace?.let {
+                    Marker(
+                        state = rememberMarkerState(key = "target", position = LatLng(it.geometry.location.lat, it.geometry.location.lng)),
+                        title = it.name,
+                        snippet = it.vicinity,
+                        onClick = { _ ->
+                            selectedPlace = it
+                            informationViewModel.fetchPlaceInformation(it)
+                            showBottomSheet = true
+                            false
+                        }
+                    )
                 }
             }
         }
 
-        // Floating Search Bar
-        ElevatedCard(
+        // Floating Search Bar & Directions FAB
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
                 .padding(16.dp),
-            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
-            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.End
         ) {
-            TextField(
-                value = searchQuery,
-                onValueChange = { placesViewModel.updateSearchQuery(it) },
+            ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search for places (e.g. cafe, park)") },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Search,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
+                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = { placesViewModel.updateSearchQuery(it) },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Search for places (e.g. cafe, park)") },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = {
+                                placesViewModel.clearSearchResults()
+                                internalSearchedDestination = null
+                            }) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Clear search",
+                                    tint = MaterialTheme.colorScheme.outline
+                                )
+                            }
+                        } else if (targetPlace != null || focusedPlace != null || focusedDay != null || effectiveSearchedDestination != null) {
+                            IconButton(onClick = {
+                                onClearFocus()
+                                internalSearchedDestination = null
+                            }) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Clear route",
+                                    tint = MaterialTheme.colorScheme.outline
+                                )
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            onClearFocus()
+                            placesViewModel.fetchSearchedPlaces(userCoordinates)
+                            isCarouselVisible = true
+                            keyboardController?.hide()
+                        }
+                    ),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        cursorColor = MaterialTheme.colorScheme.primary
                     )
-                },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { placesViewModel.clearSearchResults() }) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Clear search",
-                                tint = MaterialTheme.colorScheme.outline
-                            )
-                        }
-                    } else if (targetLocation != null || focusedPlace != null || focusedDay != null) {
-                        IconButton(onClick = { onClearFocus() }) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Clear route",
-                                tint = MaterialTheme.colorScheme.outline
-                            )
-                        }
-                    }
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(
-                    onSearch = {
-                        onClearFocus()
-                        placesViewModel.fetchSearchedPlaces(userCoordinates)
-                        keyboardController?.hide()
-                    }
-                ),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    cursorColor = MaterialTheme.colorScheme.primary
                 )
-            )
+            }
+
+            if ((focusedDay != null && focusedDay.items.isNotEmpty()) || targetPlace != null || focusedPlace != null || effectiveSearchedDestination != null) {
+                ExtendedFloatingActionButton(
+                    onClick = {
+                        val url = buildDirectionsUrl(userCoordinates, focusedDay, targetPlace, focusedPlace, effectiveSearchedDestination, transportMode)
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                            setPackage("com.google.android.apps.maps")
+                        }
+                        val fallback = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        runCatching { context.startActivity(intent) }
+                            .onFailure { context.startActivity(fallback) }
+                    },
+                    icon = { Icon(Icons.Default.LocationOn, contentDescription = null) },
+                    text = { Text("Open in Google Maps") },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
         }
 
         // Horizontal Results Carousel
         if (searchedPlaces.isNotEmpty()) {
             val bottomPadding = if (focusedDay != null && focusedDay.items.isNotEmpty()) 100.dp else 24.dp
-            LazyRow(
+            
+            Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = bottomPadding)
-                    .fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    .fillMaxWidth()
             ) {
-                items(searchedPlaces) { place ->
-                    val distance = FloatArray(1)
-                    android.location.Location.distanceBetween(
-                        userCoordinates.latitude, userCoordinates.longitude,
-                        place.geometry.location.lat, place.geometry.location.lng,
-                        distance
-                    )
-                    PlaceCard(
-                        place = place,
-                        distance = distance[0],
-                        onClick = {
-                            selectedPlace = place
-                            informationViewModel.fetchPlaceInformation(place)
-                            showBottomSheet = true
+                Column(horizontalAlignment = Alignment.End, modifier = Modifier.fillMaxWidth()) {
+                    // Toggle button
+                    IconButton(
+                        onClick = { isCarouselVisible = !isCarouselVisible },
+                        modifier = Modifier
+                            .padding(end = 16.dp, bottom = 8.dp)
+                            .background(MaterialTheme.colorScheme.surface, CircleShape)
+                            .size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isCarouselVisible) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
+                            contentDescription = if (isCarouselVisible) "Hide results" else "Show results",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    AnimatedVisibility(
+                        visible = isCarouselVisible,
+                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+                    ) {
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(searchedPlaces) { place ->
+                                val distance = FloatArray(1)
+                                android.location.Location.distanceBetween(
+                                    userCoordinates.latitude, userCoordinates.longitude,
+                                    place.geometry.location.lat, place.geometry.location.lng,
+                                    distance
+                                )
+                                PlaceCard(
+                                    place = place,
+                                    distance = distance[0],
+                                    onClick = {
+                                        selectedPlace = place
+                                        informationViewModel.fetchPlaceInformation(place)
+                                        showBottomSheet = true
+                                    }
+                                )
+                            }
                         }
-                    )
+                    }
                 }
             }
         }
 
-        if ((focusedDay != null && focusedDay.items.isNotEmpty()) || targetLocation != null || focusedPlace != null) {
-            ExtendedFloatingActionButton(
-                onClick = {
-                    val url = buildDirectionsUrl(userCoordinates, focusedDay, targetLocation, focusedPlace, transportMode)
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-                        setPackage("com.google.android.apps.maps")
-                    }
-                    val fallback = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    runCatching { context.startActivity(intent) }
-                        .onFailure { context.startActivity(fallback) }
-                },
-                icon = { Icon(Icons.Default.LocationOn, contentDescription = null) },
-                text = { Text("Open route in Google Maps") },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 24.dp),
-            )
-        }
 
         if (showBottomSheet && selectedPlace != null) {
             val wikiSummary by informationViewModel.selectedPlaceInfo.collectAsState()
@@ -395,6 +489,10 @@ fun Map(
                                 17f
                             )
                         )
+                    },
+                    onShowRoute = {
+                        showBottomSheet = false
+                        internalSearchedDestination = LatLng(it.geometry.location.lat, it.geometry.location.lng)
                     }
                 )
             }
@@ -432,8 +530,9 @@ private fun UserLocationIcon() {
 private fun buildDirectionsUrl(
     userCoordinates: LatLng,
     day: ItineraryDay?,
-    targetLocation: LatLng?,
+    targetPlace: PlaceResult?,
     focusedPlace: Place?,
+    searchedDestination: LatLng?,
     transportMode: String
 ): String {
     val travelMode = when (transportMode) {
@@ -460,13 +559,17 @@ private fun buildDirectionsUrl(
                     append("&waypoints=").append(waypoints)
                 }
             }
-            targetLocation != null -> {
+            targetPlace != null -> {
                 append("&origin=").append("${userCoordinates.latitude},${userCoordinates.longitude}")
-                append("&destination=").append("${targetLocation.latitude},${targetLocation.longitude}")
+                append("&destination=").append("${targetPlace.geometry.location.lat},${targetPlace.geometry.location.lng}")
             }
             focusedPlace != null -> {
                 append("&origin=").append("${userCoordinates.latitude},${userCoordinates.longitude}")
                 append("&destination=").append("${focusedPlace.latitude},${focusedPlace.longitude}")
+            }
+            searchedDestination != null -> {
+                append("&origin=").append("${userCoordinates.latitude},${userCoordinates.longitude}")
+                append("&destination=").append("${searchedDestination.latitude},${searchedDestination.longitude}")
             }
         }
     }

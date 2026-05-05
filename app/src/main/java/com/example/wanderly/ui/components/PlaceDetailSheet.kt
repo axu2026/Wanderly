@@ -12,11 +12,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Directions
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,15 +37,18 @@ fun PlaceDetailSheet(
     place: PlaceResult,
     wikiSummary: WikiSummary?,
     isLoading: Boolean,
-    onViewOnMap: (PlaceResult) -> Unit
+    onViewOnMap: (PlaceResult) -> Unit,
+    onShowRoute: (PlaceResult) -> Unit
 ) {
     val photoReference = place.photos?.firstOrNull()?.photo_reference
-    val imageUrl = if (photoReference != null) {
-        "https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=$photoReference&key=${BuildConfig.MAPS_API_KEY}"
-    } else wikiSummary?.thumbnail?.source
+    val imageUrl = when {
+        photoReference != null -> "https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=$photoReference&key=${BuildConfig.MAPS_API_KEY}"
+        wikiSummary?.thumbnail?.source?.isNotBlank() == true -> wikiSummary.thumbnail.source
+        else -> null
+    }
 
     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-        if (imageUrl != null) {
+        if (!imageUrl.isNullOrBlank()) {
             AsyncImage(
                 model = imageUrl,
                 contentDescription = null,
@@ -128,17 +133,37 @@ fun PlaceDetailSheet(
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
-            Button(
-                onClick = { onViewOnMap(place) },
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
-                    .height(56.dp),
-                shape = RoundedCornerShape(50)
+                    .padding(horizontal = 16.dp, vertical = 24.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Map, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("View on Map")
+                OutlinedButton(
+                    onClick = { onViewOnMap(place) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Icon(Icons.Default.Map, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("View")
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Button(
+                    onClick = { onShowRoute(place) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Icon(Icons.Default.Directions, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Directions")
+                }
             }
         }
     }

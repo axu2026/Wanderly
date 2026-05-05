@@ -53,7 +53,8 @@ fun Home(
     placesViewModel: PlacesViewModel = viewModel(),
     informationViewModel: InformationViewModel = viewModel(),
     coordinates: LatLng,
-    onPlaceClick: (LatLng) -> Unit = {}
+    onPlaceClick: (PlaceResult) -> Unit = {},
+    onShowRoute: (PlaceResult) -> Unit = {}
 ) {
     val context = LocalContext.current
     val address = viewModel.address
@@ -231,7 +232,11 @@ fun Home(
                     isLoading = wikiLoading,
                     onViewOnMap = {
                         showBottomSheet = false
-                        onPlaceClick(LatLng(it.geometry.location.lat, it.geometry.location.lng))
+                        onPlaceClick(it)
+                    },
+                    onShowRoute = {
+                        showBottomSheet = false
+                        onShowRoute(it)
                     }
                 )
             }

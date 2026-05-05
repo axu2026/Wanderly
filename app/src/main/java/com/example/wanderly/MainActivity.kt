@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.wanderly.data.model.ItineraryDay
 import com.example.wanderly.data.model.Place
+import com.example.wanderly.api.PlaceResult
 import com.example.wanderly.ui.theme.WanderlyTheme
 import com.example.wanderly.viewmodel.LocationViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -74,7 +75,8 @@ fun WanderlyApp(
     val tripState by itineraryViewModel.uiState.collectAsState()
 
     // State to track if we should focus on a specific location on the map
-    var targetLocation by remember { mutableStateOf<LatLng?>(null) }
+    var targetPlace by remember { mutableStateOf<PlaceResult?>(null) }
+    var searchedDestination by remember { mutableStateOf<LatLng?>(null) }
 
     // permission launcher for location
     val requestPermissionLauncher = rememberLauncherForActivityResult(
@@ -115,9 +117,10 @@ fun WanderlyApp(
                             currentDestination = it
                             // Clear map focus when manually switching tabs
                             if (it != AppDestinations.MAP) {
-                                targetLocation = null
+                                targetPlace = null
                                 focusedPlace = null
                                 focusedDay = null
+                                searchedDestination = null
                             }
                         }
                     )
@@ -133,8 +136,16 @@ fun WanderlyApp(
                     placesViewModel,
                     informationViewModel,
                     userCoordinates,
-                    onPlaceClick = { location ->
-                        targetLocation = location
+                    onPlaceClick = { place ->
+                        targetPlace = place
+                        focusedPlace = null
+                        focusedDay = null
+                        searchedDestination = null
+                        currentDestination = AppDestinations.MAP
+                    },
+                    onShowRoute = { place ->
+                        searchedDestination = LatLng(place.geometry.location.lat, place.geometry.location.lng)
+                        targetPlace = place
                         focusedPlace = null
                         focusedDay = null
                         currentDestination = AppDestinations.MAP
@@ -150,13 +161,15 @@ fun WanderlyApp(
                             onPlaceClick = { place ->
                                 focusedPlace = place
                                 focusedDay = null
-                                targetLocation = null
+                                targetPlace = null
+                                searchedDestination = null
                                 currentDestination = AppDestinations.MAP
                             },
                             onDayClick = { day ->
                                 focusedDay = day
                                 focusedPlace = null
-                                targetLocation = null
+                                targetPlace = null
+                                searchedDestination = null
                                 currentDestination = AppDestinations.MAP
                             }
                         )
@@ -182,16 +195,18 @@ fun WanderlyApp(
                 )
                 AppDestinations.MAP -> Map(
                     userCoordinates = userCoordinates,
-                    targetLocation = targetLocation,
+                    targetPlace = targetPlace,
                     focusedPlace = focusedPlace,
                     focusedDay = focusedDay,
+                    searchedDestination = searchedDestination,
                     transportMode = tripState.transportMode,
                     placesViewModel = placesViewModel,
                     informationViewModel = informationViewModel,
                     onClearFocus = {
-                        targetLocation = null
+                        targetPlace = null
                         focusedPlace = null
                         focusedDay = null
+                        searchedDestination = null
                     }
                 )
             }
