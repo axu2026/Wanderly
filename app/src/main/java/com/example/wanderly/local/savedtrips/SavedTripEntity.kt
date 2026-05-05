@@ -1,11 +1,16 @@
 package com.example.wanderly.local.savedtrips
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "saved_trips")
+@Entity(
+    tableName = "saved_trips",
+    indices = [Index("userId")],
+)
 data class SavedTripEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val userId: Long,
     val city: String,
     val days: Int,
     val stopCount: Int,

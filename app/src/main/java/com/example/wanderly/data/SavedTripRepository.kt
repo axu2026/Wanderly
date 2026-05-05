@@ -32,15 +32,16 @@ data class SavedTripSummary(
 object SavedTripRepository {
     private val gson = Gson()
 
-    fun observeSummaries(context: Context): Flow<List<SavedTripSummary>> {
+    fun observeSummaries(context: Context, userId: Long): Flow<List<SavedTripSummary>> {
         return DatabaseProvider.getDatabase(context)
             .savedTripDao()
-            .observeAll()
+            .observeForUser(userId)
             .map { entities -> entities.map { it.toSummary() } }
     }
 
     suspend fun save(
         context: Context,
+        userId: Long,
         setup: TripSetupState,
         days: List<ItineraryDay>,
     ): Long {
@@ -49,6 +50,7 @@ object SavedTripRepository {
             days = days.map { it.toDto() },
         )
         val entity = SavedTripEntity(
+            userId = userId,
             city = setup.city.ifBlank { "Untitled trip" },
             days = setup.days,
             stopCount = days.sumOf { it.items.size },
@@ -60,8 +62,10 @@ object SavedTripRepository {
         return DatabaseProvider.getDatabase(context).savedTripDao().insert(entity)
     }
 
-    suspend fun load(context: Context, id: Long): SavedTrip? {
-        val entity = DatabaseProvider.getDatabase(context).savedTripDao().get(id) ?: return null
+    suspend fun load(context: Context, id: Long, userId: Long): SavedTrip? {
+        val entity = DatabaseProvider.getDatabase(context)
+            .savedTripDao()
+            .get(id, userId) ?: return null
         val payload = gson.fromJson(entity.payloadJson, TripPayloadDto::class.java)
         return SavedTrip(
             id = entity.id,
@@ -71,8 +75,8 @@ object SavedTripRepository {
         )
     }
 
-    suspend fun delete(context: Context, id: Long) {
-        DatabaseProvider.getDatabase(context).savedTripDao().delete(id)
+    suspend fun delete(context: Context, id: Long, userId: Long) {
+        DatabaseProvider.getDatabase(context).savedTripDao().delete(id, userId)
     }
 
     private fun SavedTripEntity.toSummary() = SavedTripSummary(

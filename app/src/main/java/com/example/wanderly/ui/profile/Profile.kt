@@ -7,12 +7,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Bookmark
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.wanderly.data.SavedTripSummary
+import com.example.wanderly.local.users.UserEntity
 import com.example.wanderly.ui.map.formatAddress
 import com.example.wanderly.viewmodel.SavedTripsViewModel
 import java.text.DateFormat
@@ -30,34 +31,20 @@ import java.util.Date
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Profile(
+    user: UserEntity?,
     address: Address?,
     savedTripsViewModel: SavedTripsViewModel,
     onLoadTrip: (Long) -> Unit,
+    onLogout: () -> Unit,
 ) {
-    var isEditMode by remember { mutableStateOf(false) }
-    var name by remember { mutableStateOf("John Doe") }
-    var email by remember { mutableStateOf("john.doe@example.com") }
-    var location by remember { mutableStateOf(formatAddress(address)) }
-
-    LaunchedEffect(address) {
-        if (!isEditMode) location = formatAddress(address)
-    }
-
     val savedTrips by savedTripsViewModel.savedTrips.collectAsState()
     var pendingDelete by remember { mutableStateOf<SavedTripSummary?>(null) }
+    var showLogoutConfirm by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Profile", fontWeight = FontWeight.SemiBold) },
-                actions = {
-                    IconButton(onClick = { isEditMode = !isEditMode }) {
-                        Icon(
-                            imageVector = Icons.Outlined.Edit,
-                            contentDescription = if (isEditMode) "Save profile" else "Edit profile",
-                        )
-                    }
-                },
             )
         },
         containerColor = MaterialTheme.colorScheme.surface,
@@ -69,29 +56,17 @@ fun Profile(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item {
-                ProfileHeader(
-                    name = name,
-                    email = email,
-                    isEditMode = isEditMode,
-                    onNameChange = { name = it },
-                    onEmailChange = { email = it },
-                )
-            }
+            item { ProfileHeader(user) }
             item {
                 DetailsCard(
-                    location = location,
-                    isEditMode = isEditMode,
-                    onLocationChange = { location = it },
+                    homeLocation = formatAddress(address),
+                    memberSince = user?.createdAt,
+                    savedTripCount = savedTrips.size,
                 )
             }
-            item {
-                SavedTripsHeader(count = savedTrips.size)
-            }
+            item { SavedTripsHeader(count = savedTrips.size) }
             if (savedTrips.isEmpty()) {
-                item {
-                    EmptySavedTripsCard()
-                }
+                item { EmptySavedTripsCard() }
             } else {
                 items(savedTrips, key = { it.id }) { trip ->
                     SavedTripRow(
@@ -101,8 +76,10 @@ fun Profile(
                     )
                 }
             }
-
-            item { Spacer(modifier = Modifier.height(80.dp)) }
+            item {
+                LogoutButton(onClick = { showLogoutConfirm = true })
+            }
+            item { Spacer(modifier = Modifier.height(24.dp)) }
         }
     }
 
@@ -122,23 +99,34 @@ fun Profile(
             },
         )
     }
+
+    if (showLogoutConfirm) {
+        AlertDialog(
+            onDismissRequest = { showLogoutConfirm = false },
+            title = { Text("Sign out?") },
+            text = { Text("You'll need to sign back in to see your saved trips.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLogoutConfirm = false
+                    onLogout()
+                }) { Text("Sign out") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutConfirm = false }) { Text("Cancel") }
+            },
+        )
+    }
 }
 
 @Composable
-private fun ProfileHeader(
-    name: String,
-    email: String,
-    isEditMode: Boolean,
-    onNameChange: (String) -> Unit,
-    onEmailChange: (String) -> Unit,
-) {
+private fun ProfileHeader(user: UserEntity?) {
     Surface(
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.primaryContainer,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Surface(
@@ -156,33 +144,15 @@ private fun ProfileHeader(
                 }
             }
             Spacer(modifier = Modifier.height(14.dp))
-            if (isEditMode) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = onNameChange,
-                    label = { Text("Name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = onEmailChange,
-                    label = { Text("Email") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                )
-            } else {
+            Text(
+                text = user?.displayName ?: "Guest",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            if (user != null) {
                 Text(
-                    text = name,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-                Text(
-                    text = email,
+                    text = "@${user.username}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                 )
@@ -193,9 +163,9 @@ private fun ProfileHeader(
 
 @Composable
 private fun DetailsCard(
-    location: String,
-    isEditMode: Boolean,
-    onLocationChange: (String) -> Unit,
+    homeLocation: String,
+    memberSince: Long?,
+    savedTripCount: Int,
 ) {
     Surface(
         shape = RoundedCornerShape(20.dp),
@@ -203,34 +173,25 @@ private fun DetailsCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
-            if (isEditMode) {
-                OutlinedTextField(
-                    value = location,
-                    onValueChange = onLocationChange,
-                    label = { Text("Location") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                )
-            } else {
-                DetailRow(
-                    icon = Icons.Outlined.LocationOn,
-                    label = "Location",
-                    value = location.ifBlank { "Set your location" },
-                )
-            }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
             DetailRow(
-                icon = Icons.Outlined.Star,
-                label = "Travel points",
-                value = "1,250",
+                icon = Icons.Outlined.LocationOn,
+                label = "Current location",
+                value = homeLocation.ifBlank { "Locating..." },
             )
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
             DetailRow(
                 icon = Icons.Outlined.Bookmark,
-                label = "Member since",
-                value = "January 2024",
+                label = "Saved trips",
+                value = if (savedTripCount == 1) "1 trip" else "$savedTripCount trips",
             )
+            if (memberSince != null) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                DetailRow(
+                    icon = Icons.Outlined.CalendarMonth,
+                    label = "Member since",
+                    value = DateFormat.getDateInstance(DateFormat.LONG).format(Date(memberSince)),
+                )
+            }
         }
     }
 }
@@ -406,6 +367,25 @@ private fun SavedTripRow(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun LogoutButton(onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        shape = RoundedCornerShape(14.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp),
+    ) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.Logout,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Text("Sign out", style = MaterialTheme.typography.titleSmall)
     }
 }
 

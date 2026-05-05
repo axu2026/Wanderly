@@ -28,6 +28,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.wanderly.data.model.ItineraryDay
 import com.example.wanderly.data.model.Place
 import com.example.wanderly.api.PlaceResult
+import com.example.wanderly.ui.auth.LoginScreen
+import com.example.wanderly.ui.auth.SignupScreen
+import com.example.wanderly.ui.onboarding.OnboardingScreen
 import com.example.wanderly.ui.theme.WanderlyTheme
 import com.example.wanderly.viewmodel.LocationViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -38,7 +41,6 @@ import com.example.wanderly.ui.profile.*
 import com.example.wanderly.viewmodel.*
 import com.google.android.gms.maps.model.LatLng
 
-// main activity
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,15 +53,47 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// the wanderly app main composable
 @Composable
 fun WanderlyApp(
-    viewModel: LocationViewModel = viewModel()
+    locationViewModel: LocationViewModel = viewModel(),
+    authViewModel: AuthViewModel = viewModel(),
 ) {
-    // location viewModel
-    val state by viewModel.state.collectAsState()
+    val authState by authViewModel.uiState.collectAsState()
 
-    // create all the view models necessary for state on other screens
+    when {
+        !authState.sessionRestored -> Loading()
+        !authState.hasSeenOnboarding -> OnboardingScreen(
+            onFinish = { authViewModel.completeOnboarding() }
+        )
+        authState.currentUser == null -> AuthFlow(authViewModel)
+        else -> MainApp(locationViewModel, authViewModel)
+    }
+}
+
+@Composable
+private fun AuthFlow(authViewModel: AuthViewModel) {
+    var showSignup by rememberSaveable { mutableStateOf(false) }
+    if (showSignup) {
+        SignupScreen(
+            authViewModel = authViewModel,
+            onNavigateToLogin = { showSignup = false },
+        )
+    } else {
+        LoginScreen(
+            authViewModel = authViewModel,
+            onNavigateToSignup = { showSignup = true },
+        )
+    }
+}
+
+@Composable
+private fun MainApp(
+    locationViewModel: LocationViewModel,
+    authViewModel: AuthViewModel,
+) {
+    val state by locationViewModel.state.collectAsState()
+    val authState by authViewModel.uiState.collectAsState()
+
     val homeViewModel: HomeViewModel = viewModel()
     val weatherViewModel: WeatherViewModel = viewModel()
     val itineraryViewModel: ItineraryViewModel = viewModel()
@@ -67,44 +101,44 @@ fun WanderlyApp(
     val informationViewModel: InformationViewModel = viewModel()
     val savedTripsViewModel: SavedTripsViewModel = viewModel()
 
-    // mutable state for navigation
+    val currentUserId = authState.currentUser?.id
+    LaunchedEffect(currentUserId) {
+        savedTripsViewModel.setCurrentUser(currentUserId)
+    }
+
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     var showItineraryDetails by rememberSaveable { mutableStateOf(false) }
     var focusedPlace by remember { mutableStateOf<Place?>(null) }
     var focusedDay by remember { mutableStateOf<ItineraryDay?>(null) }
     val tripState by itineraryViewModel.uiState.collectAsState()
 
-    // State to track if we should focus on a specific location on the map
     var targetPlace by remember { mutableStateOf<PlaceResult?>(null) }
     var searchedDestination by remember { mutableStateOf<LatLng?>(null) }
 
-    // permission launcher for location
     val requestPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
             try {
-                viewModel.startLocationUpdates()
+                locationViewModel.startLocationUpdates()
             } catch (e: SecurityException) {
                 Log.e("Location", "Security Exception: ${e.message}")
             }
         }
     }
 
-    // request location permission on launch
     LaunchedEffect(Unit) {
-        if (!viewModel.hasLocationPermission()) {
+        if (!locationViewModel.hasLocationPermission()) {
             requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         } else {
             try {
-                viewModel.startLocationUpdates()
+                locationViewModel.startLocationUpdates()
             } catch (e: SecurityException) {
                 Log.e("Location", "Security Exception: ${e.message}")
             }
         }
     }
 
-    // run the app if location is available
     if (state.latitude != null && state.longitude != null) {
         NavigationSuiteScaffold(
             navigationSuiteItems = {
@@ -115,7 +149,6 @@ fun WanderlyApp(
                         selected = it == currentDestination,
                         onClick = {
                             currentDestination = it
-                            // Clear map focus when manually switching tabs
                             if (it != AppDestinations.MAP) {
                                 targetPlace = null
                                 focusedPlace = null
@@ -181,6 +214,7 @@ fun WanderlyApp(
                     }
                 }
                 AppDestinations.PROFILE -> Profile(
+                    user = authState.currentUser,
                     address = homeViewModel.address,
                     savedTripsViewModel = savedTripsViewModel,
                     onLoadTrip = { tripId ->
@@ -192,6 +226,7 @@ fun WanderlyApp(
                             }
                         }
                     },
+                    onLogout = { authViewModel.logout() },
                 )
                 AppDestinations.MAP -> Map(
                     userCoordinates = userCoordinates,
@@ -216,7 +251,6 @@ fun WanderlyApp(
     }
 }
 
-// for navigation
 enum class AppDestinations(
     val label: String,
     val icon: ImageVector,
