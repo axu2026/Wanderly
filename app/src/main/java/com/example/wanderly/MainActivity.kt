@@ -101,6 +101,11 @@ private fun MainApp(
     val informationViewModel: InformationViewModel = viewModel()
     val savedTripsViewModel: SavedTripsViewModel = viewModel()
 
+    val currentUserId = authState.currentUser?.id
+    LaunchedEffect(currentUserId) {
+        savedTripsViewModel.setCurrentUser(currentUserId)
+    }
+
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     var showItineraryDetails by rememberSaveable { mutableStateOf(false) }
     var focusedPlace by remember { mutableStateOf<Place?>(null) }
